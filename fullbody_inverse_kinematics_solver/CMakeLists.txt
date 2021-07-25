@@ -103,7 +103,7 @@ find_package(choreonoid REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES ik_constraint
+  LIBRARIES fullbody_inverse_kinematics_solver
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS CHOREONOID
 )
@@ -154,6 +154,8 @@ install(DIRECTORY include/${PROJECT_NAME}/
 #############
 ## Testing ##
 #############
+
+add_subdirectory(sample)
 
 ## Add gtest based cpp test target and link libraries
 # catkin_add_gtest(${PROJECT_NAME}-test test/test_fullbody_inverse_kinematics_solver.cpp)

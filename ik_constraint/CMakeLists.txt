@@ -99,7 +99,7 @@ find_package(choreonoid REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES ik_constraint
+  LIBRARIES ik_constraint
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS CHOREONOID
 )

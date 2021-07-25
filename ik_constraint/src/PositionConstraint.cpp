@@ -28,10 +28,10 @@ namespace IK{
     if(this->debuglevel_>=1){
       std::cerr << "PositionConstraint" << std::endl;
       std::cerr << "A_pos" << std::endl;
-      std::cerr << A_pos.translation() << std::endl;
+      std::cerr << A_pos.translation().transpose() << std::endl;
       std::cerr << A_pos.linear() << std::endl;
       std::cerr << "B_pos" << std::endl;
-      std::cerr << B_pos.translation() << std::endl;
+      std::cerr << B_pos.translation().transpose() << std::endl;
       std::cerr << B_pos.linear() << std::endl;
     }
 
@@ -40,6 +40,11 @@ namespace IK{
 
   // エラーを返す. A-B. world系. QPで用いる
   const Eigen::VectorXd& PositionConstraint::calc_error () {
+    if(this->debuglevel_>=1){
+      std::cerr << "PositionConstraint" << std::endl;
+      std::cerr << "error" << std::endl;
+      std::cerr << this->error_.transpose() << std::endl;
+    }
     return this->error_;
   }
 
@@ -207,10 +212,18 @@ namespace IK{
       }
     }
 
-    this->jacobian_.conservativeResize((this->weight_.array() > 0.0).count(),this->jacobian_full_.cols());
-    int idx=0;
-    for(size_t i=0;i<6;i++){
-      if(this->weight_[i]>0.0) this->jacobian_.row(idx) = this->weight_[i] * this->jacobian_full_.row(i);
+    this->jacobian_.resize((this->weight_.array() > 0.0).count(),this->jacobian_full_.cols());
+    for(size_t i=0, idx=0;i<6;i++){
+      if(this->weight_[i]>0.0) {
+        this->jacobian_.row(idx) = this->weight_[i] * this->jacobian_full_.row(i);
+        idx++;
+      }
+    }
+
+    if(this->debuglevel_>=1){
+      std::cerr << "PositionConstraint" << std::endl;
+      std::cerr << "jacobian" << std::endl;
+      std::cerr << this->jacobian_ << std::endl;
     }
     return this->jacobian_;
   }

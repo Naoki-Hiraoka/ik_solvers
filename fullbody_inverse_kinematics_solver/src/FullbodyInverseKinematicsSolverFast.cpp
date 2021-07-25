@@ -28,10 +28,12 @@ namespace fik {
   }
 
   bool checkIKConvergence(const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list) {
+    bool converged = true;
     for ( int i=0; i<ikc_list.size(); i++ ) {
-      if (!ikc_list[i]->checkConvergence()) return false;
+      // checkConvergence()の結果をキャッシュして後に利用するものがあるので、全IKConstraintに対してcheckConvergence()を呼んでおく必要が有る.
+      if (!ikc_list[i]->checkConvergence()) converged = false;
     }
-    return true;
+    return converged;
   }
 
   void solveFullbodyIKOnceFast (const cnoid::BodyPtr& robot, const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list, const cnoid::VectorX& dq_weight_all, cnoid::VectorX& jlim_avoid_weight_old, double wn, int debugLevel) {
@@ -41,7 +43,6 @@ namespace fik {
     // H = J^T * We * J + Wn
     // Wn = (e^T * We * e + \bar{wn}) * Wq // Wq: modify to insert dq weight
     // Weは既にIKConstraintクラスのJ,eに含まれている
-
     const Eigen::SparseMatrix<double,Eigen::RowMajor> S_q = toSelectionMatrix(dq_weight_all);
     const size_t VALID_Q_NUM = S_q.rows();
     if (VALID_Q_NUM == 0) return;
@@ -56,7 +57,7 @@ namespace fik {
       const Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian = ikc_list[i]->calc_jacobian(robots) * S_q.transpose();
 
       H += Eigen::SparseMatrix<double,Eigen::RowMajor>(jacobian.transpose() * jacobian);
-      g += jacobian.transpose() * error;
+      g -= jacobian.transpose() * error; // minus
       sumError += error.squaredNorm();
     }
 
@@ -104,6 +105,7 @@ namespace fik {
       dbg(g.rows());
       dbg(g.cols());
       dbg(sumError);
+      dbgv(dq_all);
       std::cout<<std::endl;
     }
 

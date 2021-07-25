@@ -10,7 +10,7 @@ namespace IK{
   {
   public:
 
-    // 必ずcheckConvergence -> getDrawOnObjects -> calc_error -> calc_jacobian -> calc_jacobianineq -> calc_min/maxineq -> 状態更新 の順で呼ぶので，同じ処理を何度も行うのではなく最初に呼ばれる関数で1回だけ行って以降はキャッシュを使ってよい
+    // 必ず, 状態更新 -> checkConvergence -> (getDrawOnObjects) -> calc_error -> calc_jacobian -> calc_jacobianineq -> calc_min/maxineq -> 状態更新 の順で呼ぶので，同じ処理を何度も行うのではなく最初に呼ばれる関数で1回だけ行って以降はキャッシュを使ってよい
     // 収束判定
     virtual bool checkConvergence ();
     // for debug view
@@ -50,7 +50,5 @@ namespace IK{
     std::vector<cnoid::SgNodePtr> drawOnObjects_;
   };
 }
-
-#include <ik_constraint/PositionConstraint.h>
 
 #endif

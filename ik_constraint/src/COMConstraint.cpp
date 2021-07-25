@@ -3,7 +3,7 @@
 
 namespace IK{
   bool COMConstraint::checkConvergence () {
-    cnoid::Vector3 error = this->targetPos_ - this->robot_->centerOfMass();
+    cnoid::Vector3 error = this->robot_->centerOfMass() - this->targetPos_;
 
     // 収束判定と、ついでにcalc_errorの返り値の計算
     if(this->error_.rows()!=(this->weight_.array() > 0.0).count()) this->error_ = Eigen::VectorXd((this->weight_.array() > 0.0).count());
@@ -81,7 +81,7 @@ namespace IK{
         for(size_t i=0;i<3;i++){
           if(this->weight_[i]>0.0){
             for(size_t j=0;j<CMJ.cols();j++){
-              this->jacobian_.coeffRef(row_idx,col_idx+j) = CMJ(i,j);
+              this->jacobian_.coeffRef(row_idx,col_idx+j) = this->weight_[i] * CMJ(i,j);
             }
             row_idx++;
           }

@@ -210,7 +210,7 @@ namespace IK{
     this->jacobian_.conservativeResize((this->weight_.array() > 0.0).count(),this->jacobian_full_.cols());
     int idx=0;
     for(size_t i=0;i<6;i++){
-      if(this->weight_[i]>0.0) this->jacobian_.row(idx) = this->jacobian_full_.row(i);
+      if(this->weight_[i]>0.0) this->jacobian_.row(idx) = this->weight_[i] * this->jacobian_full_.row(i);
     }
     return this->jacobian_;
   }

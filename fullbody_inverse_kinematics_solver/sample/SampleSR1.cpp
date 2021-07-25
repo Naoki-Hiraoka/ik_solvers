@@ -39,13 +39,14 @@ int main(void){
     constraints.push_back(constraint);
   }
   {
-    // task: larm to target
+    // task: larm to target. rotation-axis nil
     std::shared_ptr<IK::PositionConstraint> constraint = std::make_shared<IK::PositionConstraint>();
     constraint->A_link() = robot->link("LARM_WRIST_R");
     constraint->A_localpos().translation() = cnoid::Vector3(0.0,0.0,-0.02);
     constraint->B_link() = nullptr;
     constraint->B_localpos().translation() = cnoid::Vector3(0.3,0.2,0.8);
     constraint->B_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(-1.5,cnoid::Vector3(0,1,0)));
+    for(size_t i=0;i<3;i++)constraint->weight()[3+i] = 0.0;
     constraints.push_back(constraint);
   }
   {
@@ -66,7 +67,22 @@ int main(void){
     constraint->B_localpos().translation() = cnoid::Vector3(0.0,0.2,0.0);
     constraints.push_back(constraint);
   }
-  for(size_t i=0;i<constraints.size();i++) constraints[i]->debuglevel() = 0;//debug
+  {
+    // task: COM to target
+    std::shared_ptr<IK::COMConstraint> constraint = std::make_shared<IK::COMConstraint>();
+    constraint->robot() = robot;
+    constraint->targetPos() = cnoid::Vector3(0.0,0.0,0.7);
+    constraints.push_back(constraint);
+  }
+  {
+    // task: joint angle to target
+    std::shared_ptr<IK::JointAngleConstraint> constraint = std::make_shared<IK::JointAngleConstraint>();
+    constraint->joint() = robot->link("CHEST");
+    constraint->targetq() = 0.1;
+    constraints.push_back(constraint);
+  }
+
+  for(size_t i=0;i<constraints.size();i++) constraints[i]->debuglevel() = 1;//debug
 
   cnoid::VectorX jlim_avoid_weight_old = cnoid::VectorX::Zero(6+robot->numJoints());
   cnoid::VectorX dq_weight_all = cnoid::VectorX::Ones(6+robot->numJoints());
@@ -74,9 +90,9 @@ int main(void){
                                           constraints,
                                           jlim_avoid_weight_old,
                                           dq_weight_all,
-                                          10,
+                                          20,
                                           1e-6,
-                                          0//debug
+                                          1//debug
                                           );
 
   std::cerr << "loop: " << loop << std::endl;

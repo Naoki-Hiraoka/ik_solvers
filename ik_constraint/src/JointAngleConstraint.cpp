@@ -1,4 +1,5 @@
 #include <ik_constraint/JointAngleConstraint.h>
+#include <iostream>
 
 namespace IK{
   bool JointAngleConstraint::checkConvergence () {
@@ -9,10 +10,24 @@ namespace IK{
     if(this->error_.rows() != 1) this->error_ = Eigen::VectorXd(1);
     this->error_[0] = this->weight_ * error;
 
+    if(this->debuglevel_>=1){
+      std::cerr << "JointAngleConstraint" << std::endl;
+      std::cerr << "q" << std::endl;
+      std::cerr << this->joint_->q() << std::endl;
+      std::cerr << "targetq" << std::endl;
+      std::cerr << this->targetq_ << std::endl;
+    }
+
     return std::fabs(error) < this->precision_;
   }
 
   const Eigen::VectorXd& JointAngleConstraint::calc_error () {
+    if(this->debuglevel_>=1){
+      std::cerr << "JointAngleConstraint" << std::endl;
+      std::cerr << "error" << std::endl;
+      std::cerr << this->error_ << std::endl;
+    }
+
     return this->error_;
   }
 
@@ -42,6 +57,11 @@ namespace IK{
 
     this->jacobian_.coeffRef(0,this->jacobian_col_) = this->weight_;
 
+    if(this->debuglevel_>=1){
+      std::cerr << "JointAngleConstraint" << std::endl;
+      std::cerr << "jacobian" << std::endl;
+      std::cerr << this->jacobian_ << std::endl;
+    }
     return this->jacobian_;
   }
 }

@@ -20,15 +20,21 @@ namespace IK{
     if(this->debuglevel_>=1){
       std::cerr << "COMConstraint" << std::endl;
       std::cerr << "COM" << std::endl;
-      std::cerr << this->robot_->centerOfMass() << std::endl;
+      std::cerr << this->robot_->centerOfMass().transpose() << std::endl;
       std::cerr << "targetPos" << std::endl;
-      std::cerr << this->targetPos_ << std::endl;
+      std::cerr << this->targetPos_.transpose() << std::endl;
     }
 
     return converged;
   }
 
   const Eigen::VectorXd& COMConstraint::calc_error (){
+    if(this->debuglevel_>=1){
+      std::cerr << "COMConstraint" << std::endl;
+      std::cerr << "error" << std::endl;
+      std::cerr << this->error_.transpose() << std::endl;
+    }
+
     return this->error_;
   }
 
@@ -89,6 +95,12 @@ namespace IK{
         break;
       }
       col_idx += 6 + bodies[b]->numJoints();
+    }
+
+    if(this->debuglevel_>=1){
+      std::cerr << "COMConstraint" << std::endl;
+      std::cerr << "jacobian" << std::endl;
+      std::cerr << this->jacobian_ << std::endl;
     }
 
     return this->jacobian_;

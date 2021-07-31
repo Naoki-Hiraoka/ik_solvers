@@ -1,5 +1,5 @@
-#ifndef JOINTANGLECONSTRAINT_H
-#define JOINTANGLECONSTRAINT_H
+#ifndef IKCONSTRAINT_JOINTANGLECONSTRAINT_H
+#define IKCONSTRAINT_JOINTANGLECONSTRAINT_H
 
 #include <ik_constraint/IKConstraint.h>
 #include <cnoid/EigenUtil>
@@ -26,7 +26,7 @@ namespace IK{
 
     bool checkConvergence () override;
     const Eigen::VectorXd& calc_error () override;
-    const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobian (const std::vector<cnoid::BodyPtr>& bodies) override;
+    const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobian (const std::vector<cnoid::LinkPtr>& joints) override;
 
   private:
     cnoid::LinkPtr joint_ = nullptr;
@@ -36,7 +36,6 @@ namespace IK{
     double weight_ = 1.0;
 
     cnoid::LinkPtr jacobian_joint_ = nullptr; //前回jacobian_を計算した時のjoint
-    double jacobian_col_ = 0; //前回jacobian_を計算した時のjointに対応するcol
   };
 }
 

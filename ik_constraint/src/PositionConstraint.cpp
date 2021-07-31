@@ -1,6 +1,72 @@
 #include <ik_constraint/PositionConstraint.h>
 
 namespace IK{
+  void pushBackTripletList(std::vector<Eigen::Triplet<double> >& tripletList, const cnoid::LinkPtr& joint, int idx){
+    if(joint->isFreeJoint()){
+      for(size_t d=0;d<6;d++){
+        tripletList.push_back(Eigen::Triplet<double>(d,idx+d,1));
+      }
+      //  0     p[2] -p[1]
+      // -p[2]  0     p[0]
+      //  p[1] -p[0]  0
+      tripletList.push_back(Eigen::Triplet<double>(0,idx+4,1));
+      tripletList.push_back(Eigen::Triplet<double>(0,idx+5,1));
+      tripletList.push_back(Eigen::Triplet<double>(1,idx+3,1));
+      tripletList.push_back(Eigen::Triplet<double>(1,idx+5,1));
+      tripletList.push_back(Eigen::Triplet<double>(2,idx+3,1));
+      tripletList.push_back(Eigen::Triplet<double>(2,idx+4,1));
+
+    } else if(joint->isRotationalJoint()){
+      tripletList.push_back(Eigen::Triplet<double>(0,idx,1));
+      tripletList.push_back(Eigen::Triplet<double>(1,idx,1));
+      tripletList.push_back(Eigen::Triplet<double>(2,idx,1));
+      tripletList.push_back(Eigen::Triplet<double>(3,idx,1));
+      tripletList.push_back(Eigen::Triplet<double>(4,idx,1));
+      tripletList.push_back(Eigen::Triplet<double>(5,idx,1));
+
+    } else if(joint->isPrismaticJoint()){
+      tripletList.push_back(Eigen::Triplet<double>(0,idx,1));
+      tripletList.push_back(Eigen::Triplet<double>(1,idx,1));
+      tripletList.push_back(Eigen::Triplet<double>(2,idx,1));
+
+    }
+  }
+
+  void fillJacobian(Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian, const cnoid::Vector3& target_p, const cnoid::LinkPtr& joint, int idx, int sign){
+    if(joint->isFreeJoint()){
+      //root 6dof
+      for(size_t j=0;j<6;j++){
+        jacobian.coeffRef(j,idx+j) = sign;
+      }
+      cnoid::Vector3 dp = target_p - joint->p();
+      //  0     p[2] -p[1]
+      // -p[2]  0     p[0]
+      //  p[1] -p[0]  0
+      jacobian.coeffRef(0,idx+4)=sign*dp[2];
+      jacobian.coeffRef(0,idx+5)=-sign*dp[1];
+      jacobian.coeffRef(1,idx+3)=-sign*dp[2];
+      jacobian.coeffRef(1,idx+5)=sign*dp[0];
+      jacobian.coeffRef(2,idx+3)=sign*dp[1];
+      jacobian.coeffRef(2,idx+4)=-sign*dp[0];
+
+    } else if(joint->isRotationalJoint()){
+      cnoid::Vector3 omega = joint->R() * joint->a();
+      cnoid::Vector3 dp = omega.cross(target_p - joint->p());
+      jacobian.coeffRef(0,idx)=sign*dp[0];
+      jacobian.coeffRef(1,idx)=sign*dp[1];
+      jacobian.coeffRef(2,idx)=sign*dp[2];
+      jacobian.coeffRef(3,idx)=sign*omega[0];
+      jacobian.coeffRef(4,idx)=sign*omega[1];
+      jacobian.coeffRef(5,idx)=sign*omega[2];
+
+    } else if(joint->isPrismaticJoint()){
+      cnoid::Vector3 dp = joint->R() * joint->d();
+      jacobian.coeffRef(0,idx)=sign*dp[0];
+      jacobian.coeffRef(1,idx)=sign*dp[1];
+      jacobian.coeffRef(2,idx)=sign*dp[2];
+    }
+  }
+
   PositionConstraint::PositionConstraint () {
     this->maxError_ << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
     this->precision_ << 1e-4, 1e-4, 1e-4, 0.001745, 0.001745, 0.001745;
@@ -49,12 +115,18 @@ namespace IK{
   }
 
   // ヤコビアンを返す. bodyのroot6dof+全関節が変数
-  const Eigen::SparseMatrix<double,Eigen::RowMajor>& PositionConstraint::calc_jacobian (const std::vector<cnoid::BodyPtr>& bodies) {
+  const Eigen::SparseMatrix<double,Eigen::RowMajor>& PositionConstraint::calc_jacobian (const std::vector<cnoid::LinkPtr>& joints) {
     // 行列の初期化. 前回とcol形状が変わっていないなら再利用
-    if(!this->is_bodies_same(bodies,this->jacobian_bodies_)
+    if(!this->is_joints_same(joints,this->jacobian_joints_)
        || this->A_link_ != this->jacobian_A_link_
        || this->B_link_ != this->jacobian_B_link_){
-      this->jacobian_bodies_ = bodies;
+      this->jacobian_joints_ = joints;
+      this->jacobianColMap_.clear();
+      int num_variables = 0;
+      for(size_t i=0;i<this->jacobian_joints_.size();i++){
+        this->jacobianColMap_[this->jacobian_joints_[i]] = num_variables;
+        num_variables += this->getJointDOF(this->jacobian_joints_[i]);
+      }
       this->jacobian_A_link_ = this->A_link_;
       this->jacobian_B_link_ = this->B_link_;
 
@@ -65,73 +137,44 @@ namespace IK{
         // A, Bが関節を共有しない. 別々に処理すれば良い
         for(size_t i=0;i<2;i++){//0:A_link, 1:B_link
           cnoid::LinkPtr target_link = i ? this->B_link_ : this->A_link_;
-          cnoid::JointPath& path = i? this->path_B_ : this->path_A_;
+          std::vector<cnoid::LinkPtr>& path_joints = 1 ? this->path_B_joints_ : this->path_A_joints_;
 
           if(!target_link) continue;//world固定なので飛ばす
 
-          int idx = 0;
-          for(size_t b=0;b<bodies.size();b++){
-            if(bodies[b] == target_link->body()){
-              //root 6dof
-              for(size_t j=0;j<6;j++){
-                tripletList.push_back(Eigen::Triplet<double>(j,idx+j,1));
-              }
-              //  0     p[2] -p[1]
-              // -p[2]  0     p[0]
-              //  p[1] -p[0]  0
-              tripletList.push_back(Eigen::Triplet<double>(0,idx+4,1));
-              tripletList.push_back(Eigen::Triplet<double>(0,idx+5,1));
-              tripletList.push_back(Eigen::Triplet<double>(1,idx+3,1));
-              tripletList.push_back(Eigen::Triplet<double>(1,idx+5,1));
-              tripletList.push_back(Eigen::Triplet<double>(2,idx+3,1));
-              tripletList.push_back(Eigen::Triplet<double>(2,idx+4,1));
+          path_joints.clear();
+          cnoid::LinkPath path(target_link);
+          for(size_t j=0;j<path.size();j++){
+            path_joints.push_back(path[j]);
+          }
 
-              //joints
-              path.setPath(target_link);
-              for(size_t j=0;j<path.numJoints();j++){
-                int col = idx+6+path.joint(j)->jointId();
-                tripletList.push_back(Eigen::Triplet<double>(0,col,1));
-                tripletList.push_back(Eigen::Triplet<double>(1,col,1));
-                tripletList.push_back(Eigen::Triplet<double>(2,col,1));
-                tripletList.push_back(Eigen::Triplet<double>(3,col,1));
-                tripletList.push_back(Eigen::Triplet<double>(4,col,1));
-                tripletList.push_back(Eigen::Triplet<double>(5,col,1));
-              }
-
-              break;
-            }
-            idx += 6 + bodies[b]->numJoints();
+          for(size_t j=0;j<path_joints.size();j++){
+            cnoid::LinkPtr joint = path_joints[j];
+            if(this->jacobianColMap_.find(joint)==this->jacobianColMap_.end()) continue;
+            int idx = this->jacobianColMap_[joint];
+            pushBackTripletList(tripletList,joint,idx);
           }
         }
       } else { //if(!A_link || !B_link || !(A_link->body() == B_link->body()))
         //A,Bが関節を共有する. 一つのpathで考える
-        int idx = 0;
-        for(size_t b=0;b<bodies.size();b++){
-          if(bodies[b] == this->A_link_->body()){
-            //joints
-            this->path_BA_.setPath(this->B_link_,this->A_link_);
+        this->path_BA_joints_.clear();
+        {
+          cnoid::LinkPath path(this->B_link_,this->A_link_);
+          size_t j=0;
+          for(;!path.isDownward(j);j++) this->path_BA_joints_.push_back(path[j]);
+          this->path_BA_joints_numUpwardConnections_ = j;
+          j++;
+          for(;j<path.size();j++) this->path_BA_joints_.push_back(path[j]);
+        }
 
-            for(size_t j=0;j<this->path_BA_.numJoints();j++){
-              int col = idx+6+this->path_BA_.joint(j)->jointId();
-              tripletList.push_back(Eigen::Triplet<double>(0,col,1));
-              tripletList.push_back(Eigen::Triplet<double>(1,col,1));
-              tripletList.push_back(Eigen::Triplet<double>(2,col,1));
-              tripletList.push_back(Eigen::Triplet<double>(3,col,1));
-              tripletList.push_back(Eigen::Triplet<double>(4,col,1));
-              tripletList.push_back(Eigen::Triplet<double>(5,col,1));
-            }
-            break;
-          }
-          idx += 6 + bodies[b]->numJoints();
+        for(size_t j=0;j<this->path_BA_joints_.size();j++){
+          cnoid::LinkPtr joint = this->path_BA_joints_[j];
+          if(this->jacobianColMap_.find(joint)==this->jacobianColMap_.end()) continue;
+          int idx = this->jacobianColMap_[joint];
+          pushBackTripletList(tripletList,joint,idx);
         }
       }
 
-      int dim = 0;
-      for(size_t i=0; i < bodies.size(); i++){
-        dim += 6 + bodies[i]->numJoints();
-      }
-
-      this->jacobian_full_ = Eigen::SparseMatrix<double,Eigen::RowMajor>(6,dim);
+      this->jacobian_full_ = Eigen::SparseMatrix<double,Eigen::RowMajor>(6,num_variables);
       this->jacobian_full_.setFromTriplets(tripletList.begin(), tripletList.end());
 
     }
@@ -142,73 +185,32 @@ namespace IK{
         int sign = i ? -1 : 1;
         cnoid::LinkPtr target_link = i ? this->B_link_ : this->A_link_;
         const cnoid::Position& target_localpos = i ? this->B_localpos_ : this->A_localpos_;
-        cnoid::JointPath& path = i ? this->path_B_ : this->path_A_;
+        std::vector<cnoid::LinkPtr>& path_joints = i ? this->path_B_joints_ : this->path_B_joints_;
 
         if(!target_link) continue;//world固定なので飛ばす
 
         const cnoid::Position target_position = target_link->T() * target_localpos;
         const cnoid::Vector3 target_p = target_position.translation();
 
-        int idx = 0;
-        for(size_t b=0;b<bodies.size();b++){
-          if(bodies[b] == target_link->body()){
-            //root 6dof
-            for(size_t j=0;j<6;j++){
-              this->jacobian_full_.coeffRef(j,idx+j) = sign;
-            }
-            cnoid::Vector3 dp = target_p - bodies[b]->rootLink()->p();
-            //  0     p[2] -p[1]
-            // -p[2]  0     p[0]
-            //  p[1] -p[0]  0
-            this->jacobian_full_.coeffRef(0,idx+4)=sign*dp[2];
-            this->jacobian_full_.coeffRef(0,idx+5)=-sign*dp[1];
-            this->jacobian_full_.coeffRef(1,idx+3)=-sign*dp[2];
-            this->jacobian_full_.coeffRef(1,idx+5)=sign*dp[0];
-            this->jacobian_full_.coeffRef(2,idx+3)=sign*dp[1];
-            this->jacobian_full_.coeffRef(2,idx+4)=-sign*dp[0];
-
-            //joints
-            for(size_t j=0;j<path.numJoints();j++){
-              int col = idx+6+path.joint(j)->jointId();
-              cnoid::Vector3 omega = path.joint(j)->R() * path.joint(j)->a();
-              if(!path.isJointDownward(j)) omega = -omega;
-              cnoid::Vector3 dp = omega.cross(target_p - path.joint(j)->p());
-              this->jacobian_full_.coeffRef(0,col)=sign*dp[0];
-              this->jacobian_full_.coeffRef(1,col)=sign*dp[1];
-              this->jacobian_full_.coeffRef(2,col)=sign*dp[2];
-              this->jacobian_full_.coeffRef(3,col)=sign*omega[0];
-              this->jacobian_full_.coeffRef(4,col)=sign*omega[1];
-              this->jacobian_full_.coeffRef(5,col)=sign*omega[2];
-            }
-
-            break;
-          }
-          idx += 6 + bodies[b]->numJoints();
+        for(size_t j=0;j<path_joints.size();j++){
+          cnoid::LinkPtr joint = path_joints[j];
+          if(this->jacobianColMap_.find(joint)==this->jacobianColMap_.end()) continue;
+          int idx = this->jacobianColMap_[joint];
+          fillJacobian(this->jacobian_full_,target_p,joint,idx,sign);
         }
       }
     } else { //if(!A_link || !B_link || !(A_link->body() == B_link->body()))
       //A,Bが関節を共有する. 一つのpathで考える
-      int idx = 0;
-      for(size_t b=0;b<bodies.size();b++){
-        if(bodies[b] == this->A_link_->body()){
-          //joints
-          const cnoid::Vector3& target_p = this->A_link_->T() * this->A_localpos_.translation();
-
-          for(size_t j=0;j<this->path_BA_.numJoints();j++){
-            int col = idx+6+this->path_BA_.joint(j)->jointId();
-            cnoid::Vector3 omega = this->path_BA_.joint(j)->R() * this->path_BA_.joint(j)->a();
-            if(!this->path_BA_.isJointDownward(j)) omega = -omega;
-            cnoid::Vector3 dp = omega.cross(target_p - this->path_BA_.joint(j)->p());
-            this->jacobian_full_.coeffRef(0,col)=dp[0];
-            this->jacobian_full_.coeffRef(1,col)=dp[1];
-            this->jacobian_full_.coeffRef(2,col)=dp[2];
-            this->jacobian_full_.coeffRef(3,col)=omega[0];
-            this->jacobian_full_.coeffRef(4,col)=omega[1];
-            this->jacobian_full_.coeffRef(5,col)=omega[2];
+      const cnoid::Vector3& target_p = this->A_link_->T() * this->A_localpos_.translation();
+      for(size_t j=0;j<this->path_BA_joints_.size();j++){
+          cnoid::LinkPtr joint = this->path_BA_joints_[j];
+          if(this->jacobianColMap_.find(joint)==this->jacobianColMap_.end()) continue;
+          int idx = this->jacobianColMap_[joint];
+          if(j<this->path_BA_joints_numUpwardConnections_){
+            fillJacobian(this->jacobian_full_,target_p,joint,idx,-1);
+          } else {
+            fillJacobian(this->jacobian_full_,target_p,joint,idx,1);
           }
-          break;
-        }
-        idx += 6 + bodies[b]->numJoints();
       }
     }
 

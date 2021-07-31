@@ -51,10 +51,14 @@ namespace fik {
     Eigen::VectorXd g = Eigen::VectorXd::Zero(VALID_Q_NUM);
     double sumError = 0.0;
 
-    std::vector<cnoid::BodyPtr> robots; robots.push_back(robot);
+    std::vector<cnoid::LinkPtr> joints;
+    joints.push_back(robot->rootLink());
+    for(int j=0;j<robot->numJoints();j++){
+      joints.push_back(robot->joint(j));
+    }
     for(size_t i=0;i<ikc_list.size();i++){
       const Eigen::VectorXd& error = ikc_list[i]->calc_error();
-      const Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian = ikc_list[i]->calc_jacobian(robots) * S_q.transpose();
+      const Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian = ikc_list[i]->calc_jacobian(joints) * S_q.transpose();
 
       H += Eigen::SparseMatrix<double,Eigen::RowMajor>(jacobian.transpose() * jacobian);
       g -= jacobian.transpose() * error; // minus

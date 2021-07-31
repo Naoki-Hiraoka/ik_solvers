@@ -3,7 +3,7 @@
 
 #include <ik_constraint/IKConstraint.h>
 #include <cnoid/EigenUtil>
-#include <cnoid/JointPath>
+#include <cnoid/LinkPath>
 #include <iostream>
 
 namespace IK{
@@ -43,7 +43,7 @@ namespace IK{
     const Eigen::VectorXd& calc_error () override;
 
     // ヤコビアンを返す. bodyのroot6dof+全関節が変数
-    const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobian (const std::vector<cnoid::BodyPtr>& bodies) override;
+    const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobian (const std::vector<cnoid::LinkPtr>& joints) override;
 
     // コスト(エラーの二乗和)を返す. 非線形最適化で用いる
     // TODO
@@ -62,9 +62,10 @@ namespace IK{
 
     cnoid::SgLineSetPtr lines_;
 
-    cnoid::JointPath path_A_;
-    cnoid::JointPath path_B_;
-    cnoid::JointPath path_BA_;
+    std::vector<cnoid::LinkPtr> path_A_joints_;
+    std::vector<cnoid::LinkPtr> path_B_joints_;
+    std::vector<cnoid::LinkPtr> path_BA_joints_;
+    int path_BA_joints_numUpwardConnections_;
     Eigen::SparseMatrix<double,Eigen::RowMajor> jacobian_full_;
     cnoid::LinkPtr jacobian_A_link_ = nullptr;// 前回のjacobian計算時のA_link
     cnoid::LinkPtr jacobian_B_link_ = nullptr;// 前回のjacobian計算時のB_link

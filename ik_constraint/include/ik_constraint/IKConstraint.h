@@ -4,6 +4,7 @@
 #include <cnoid/Body>
 #include <cnoid/SceneDrawables>
 #include <Eigen/Sparse>
+#include <unordered_map>
 
 namespace IK{
   class IKConstraint
@@ -18,9 +19,9 @@ namespace IK{
     // 等式制約のエラーを返す.
     virtual const Eigen::VectorXd& calc_error ();
     // 等式制約のヤコビアンを返す. bodyのroot6dof+全関節が変数
-    virtual const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobian (const std::vector<cnoid::BodyPtr>& bodies);
+    virtual const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobian (const std::vector<cnoid::LinkPtr>& joints);
     // 不等式制約のヤコビアンを返す. bodyのroot6dof+全関節が変数
-    virtual const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobianineq (const std::vector<cnoid::BodyPtr>& bodies);
+    virtual const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobianineq (const std::vector<cnoid::LinkPtr>& joints);
     // 不等式制約のmin値を返す
     virtual const Eigen::VectorXd& calc_minineq ();
     // 不等式制約のmax値を返す
@@ -35,17 +36,19 @@ namespace IK{
     const int& debuglevel() const { return debuglevel_;}
     int& debuglevel() { return debuglevel_;}
   protected:
-    // bodiesが同じかどうか
-    bool is_bodies_same(const std::vector<cnoid::BodyPtr>& bodies1,const std::vector<cnoid::BodyPtr>& bodies2);
+    bool is_joints_same(const std::vector<cnoid::LinkPtr>& joints1,const std::vector<cnoid::LinkPtr>& joints2);
+    size_t getJointDOF(const cnoid::LinkPtr& joint);
 
     int debuglevel_ = 0;
 
     Eigen::VectorXd error_;
-    std::vector<cnoid::BodyPtr> jacobian_bodies_; // 前回のjacobian計算時のBody
+    std::vector<cnoid::LinkPtr> jacobian_joints_; // 前回のjacobian計算時のjoints
+    std::unordered_map<cnoid::LinkPtr,int> jacobianColMap_;
     Eigen::SparseMatrix<double,Eigen::RowMajor> jacobian_;
     Eigen::VectorXd minineq_;
     Eigen::VectorXd maxineq_;
-    std::vector<cnoid::BodyPtr> jacobianineq_bodies_; // 前回のjacobianineq計算時のBody
+    std::vector<cnoid::LinkPtr> jacobianineq_joints_; // 前回のjacobianineq計算時のjoints
+    std::unordered_map<cnoid::LinkPtr,int> jacobianineqColMap_;
     Eigen::SparseMatrix<double,Eigen::RowMajor> jacobianineq_;
     std::vector<cnoid::SgNodePtr> drawOnObjects_;
   };

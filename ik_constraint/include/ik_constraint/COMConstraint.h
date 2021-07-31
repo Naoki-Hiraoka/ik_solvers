@@ -33,7 +33,7 @@ namespace IK{
     std::vector<cnoid::SgNodePtr>& getDrawOnObjects() override;
 
     const Eigen::VectorXd& calc_error () override;
-    const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobian (const std::vector<cnoid::BodyPtr>& bodies) override;
+    const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobian (const std::vector<cnoid::LinkPtr>& joints) override;
   protected:
     cnoid::BodyPtr robot_ = nullptr;
     cnoid::Vector3 targetPos_ = cnoid::Vector3::Zero();

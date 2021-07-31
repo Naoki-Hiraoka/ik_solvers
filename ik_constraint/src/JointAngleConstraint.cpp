@@ -31,31 +31,33 @@ namespace IK{
     return this->error_;
   }
 
-  const Eigen::SparseMatrix<double,Eigen::RowMajor>& JointAngleConstraint::calc_jacobian (const std::vector<cnoid::BodyPtr>& bodies) {
-    if(!this->is_bodies_same(bodies,this->jacobian_bodies_) ||
+  const Eigen::SparseMatrix<double,Eigen::RowMajor>& JointAngleConstraint::calc_jacobian (const std::vector<cnoid::LinkPtr>& joints) {
+    if(!this->is_joints_same(joints,this->jacobian_joints_) ||
        this->joint_ != this->jacobian_joint_){
-      this->jacobian_bodies_ = bodies;
+      this->jacobian_joints_ = joints;
       this->jacobian_joint_ = this->joint_;
-
+      this->jacobianColMap_.clear();
       int cols = 0;
-      for(size_t i=0; i < bodies.size(); i++){
-        cols += 6 + bodies[i]->numJoints();
+      for(size_t i=0; i < this->jacobian_joints_.size(); i++){
+        this->jacobianColMap_[this->jacobian_joints_[i]] = cols;
+        cols += this->getJointDOF(this->jacobian_joints_[i]);
       }
 
       this->jacobian_ = Eigen::SparseMatrix<double,Eigen::RowMajor>(1,cols);
 
-      int idx = 0;
-      for(size_t b=0;b<bodies.size();b++){
-        if(bodies[b] == this->joint_->body()){
-          this->jacobian_.insert(0,idx+6+this->joint_->jointId()) = 1;
-          this->jacobian_col_ = idx+6+this->joint_->jointId();
-          break;
+      if(this->jacobianColMap_.find(this->jacobian_joint_) != this->jacobianColMap_.end()){
+        if(this->jacobian_joint_->isRotationalJoint() || this->jacobian_joint_->isPrismaticJoint()){
+          this->jacobian_.insert(0,this->jacobianColMap_[this->jacobian_joint_]) = 1;
         }
-        idx += 6 + bodies[b]->numJoints();
       }
+
     }
 
-    this->jacobian_.coeffRef(0,this->jacobian_col_) = this->weight_;
+    if(this->jacobianColMap_.find(this->jacobian_joint_) != this->jacobianColMap_.end()){
+      if(this->jacobian_joint_->isRotationalJoint() || this->jacobian_joint_->isPrismaticJoint()){
+        this->jacobian_.coeffRef(0,this->jacobianColMap_[this->jacobian_joint_]) = this->weight_;
+      }
+    }
 
     if(this->debuglevel_>=1){
       std::cerr << "JointAngleConstraint" << std::endl;

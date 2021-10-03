@@ -77,7 +77,8 @@ namespace IK{
     const cnoid::Position& A_pos = (this->A_link_) ? this->A_link_->T() * this->A_localpos_ : this->A_localpos_;
     const cnoid::Position& B_pos = (this->B_link_) ? this->B_link_->T() * this->B_localpos_ : this->B_localpos_;
     cnoid::Vector6 error;
-    error << A_pos.translation() - B_pos.translation() , cnoid::omegaFromRot(A_pos.linear() * B_pos.linear().transpose());
+    cnoid::AngleAxis angleAxis = cnoid::AngleAxis(A_pos.linear() * B_pos.linear().transpose());
+    error << A_pos.translation() - B_pos.translation() , angleAxis.angle()*angleAxis.axis();
 
     // 収束判定と、ついでにcalc_errorの返り値の計算
     if(this->error_.rows()!=(this->weight_.array() > 0.0).count()) this->error_ = Eigen::VectorXd((this->weight_.array() > 0.0).count());

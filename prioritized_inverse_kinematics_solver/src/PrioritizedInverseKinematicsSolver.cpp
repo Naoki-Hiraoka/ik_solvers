@@ -42,6 +42,7 @@ namespace prioritized_inverse_kinematics_solver {
     for(size_t i=0;i<ikc_list.size();i++){
       prevTasks[i]->toSolve() = true;
 
+      prevTasks[i]->solver().settings()->setVerbosity(debugLevel);
       prevTasks[i]->solver().settings()->setMaxIteraction(4000);
       prevTasks[i]->solver().settings()->setAbsoluteTolerance(1e-4);// 1e-5の方がいいかも．1e-4の方がやや速いが，やや不正確
       prevTasks[i]->solver().settings()->setRelativeTolerance(1e-4);// 1e-5の方がいいかも．1e-4の方がやや速いが，やや不正確
@@ -93,7 +94,7 @@ namespace prioritized_inverse_kinematics_solver {
 
       if(debugLevel>0) prevTasks[i]->name() = "Task" + i;
     }
-    std::cerr <<"aaa"<<std::endl;
+
     // solve
     cnoid::VectorX result;
     if(!prioritized_qp::solve(prevTasks, result, debugLevel)){

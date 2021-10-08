@@ -128,6 +128,7 @@ add_library(${PROJECT_NAME}
   src/PositionConstraint.cpp
   src/COMConstraint.cpp
   src/JointAngleConstraint.cpp
+  src/JointLimitConstraint.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

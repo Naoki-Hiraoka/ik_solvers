@@ -29,24 +29,21 @@ int main(void){
   // setup tasks
   std::vector<std::shared_ptr<IK::IKConstraint> > constraints0;
   {
-    // task: rarm to target
+    // task: rleg to target
     std::shared_ptr<IK::PositionConstraint> constraint = std::make_shared<IK::PositionConstraint>();
-    constraint->A_link() = robot->link("RARM_WRIST_R");
-    constraint->A_localpos().translation() = cnoid::Vector3(0.0,0.0,-0.02);
+    constraint->A_link() = robot->link("RLEG_ANKLE_R");
+    constraint->A_localpos().translation() = cnoid::Vector3(0.0,0.0,-0.04);
     constraint->B_link() = nullptr;
-    constraint->B_localpos().translation() = cnoid::Vector3(0.3,-0.2,0.8);
-    constraint->B_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(-1.5,cnoid::Vector3(0,1,0)));
+    constraint->B_localpos().translation() = cnoid::Vector3(0.0,-0.2,-0.0);
     constraints0.push_back(constraint);
   }
   {
-    // task: larm to target. rotation-axis nil
+    // task: lleg to target
     std::shared_ptr<IK::PositionConstraint> constraint = std::make_shared<IK::PositionConstraint>();
-    constraint->A_link() = robot->link("LARM_WRIST_R");
-    constraint->A_localpos().translation() = cnoid::Vector3(0.0,0.0,-0.02);
+    constraint->A_link() = robot->link("LLEG_ANKLE_R");
+    constraint->A_localpos().translation() = cnoid::Vector3(0.0,0.0,-0.04);
     constraint->B_link() = nullptr;
-    constraint->B_localpos().translation() = cnoid::Vector3(0.3,0.2,0.8);
-    constraint->B_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(-1.5,cnoid::Vector3(0,1,0)));
-    for(size_t i=0;i<3;i++)constraint->weight()[3+i] = 0.0;
+    constraint->B_localpos().translation() = cnoid::Vector3(0.0,0.2,0.0);
     constraints0.push_back(constraint);
   }
   {
@@ -59,21 +56,24 @@ int main(void){
 
   std::vector<std::shared_ptr<IK::IKConstraint> > constraints1;
   {
-    // task: rleg to target
+    // task: rarm to target. never reach
     std::shared_ptr<IK::PositionConstraint> constraint = std::make_shared<IK::PositionConstraint>();
-    constraint->A_link() = robot->link("RLEG_ANKLE_R");
-    constraint->A_localpos().translation() = cnoid::Vector3(0.0,0.0,-0.04);
+    constraint->A_link() = robot->link("RARM_WRIST_R");
+    constraint->A_localpos().translation() = cnoid::Vector3(0.0,0.0,-0.02);
     constraint->B_link() = nullptr;
-    constraint->B_localpos().translation() = cnoid::Vector3(0.0,-0.2,0.0);
+    constraint->B_localpos().translation() = cnoid::Vector3(0.6,-0.2,0.8);
+    constraint->B_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(-1.5,cnoid::Vector3(0,1,0)));
     constraints1.push_back(constraint);
   }
   {
-    // task: lleg to target
+    // task: larm to target. rotation-axis nil
     std::shared_ptr<IK::PositionConstraint> constraint = std::make_shared<IK::PositionConstraint>();
-    constraint->A_link() = robot->link("LLEG_ANKLE_R");
-    constraint->A_localpos().translation() = cnoid::Vector3(0.0,0.0,-0.04);
+    constraint->A_link() = robot->link("LARM_WRIST_R");
+    constraint->A_localpos().translation() = cnoid::Vector3(0.0,0.0,-0.02);
     constraint->B_link() = nullptr;
-    constraint->B_localpos().translation() = cnoid::Vector3(0.0,0.2,0.0);
+    constraint->B_localpos().translation() = cnoid::Vector3(0.3,0.2,0.8);
+    constraint->B_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(-1.5,cnoid::Vector3(0,1,0)));
+    for(size_t i=0;i<3;i++)constraint->weight()[3+i] = 0.0;
     constraints1.push_back(constraint);
   }
 
@@ -102,7 +102,7 @@ int main(void){
   int loop = prioritized_inverse_kinematics_solver::solveIKLoop(variables,
                                                                 constraints,
                                                                 tasks,
-                                                                20,
+                                                                40,
                                                                 1e-6,
                                                                 1//debug
                                                                 );

@@ -92,7 +92,7 @@ namespace prioritized_inverse_kinematics_solver {
       for(size_t j=0;j<ikc_list[i].size(); j++) sumError += errors[j].get().squaredNorm();
       prevTasks[i]->w() = cnoid::VectorXd::Ones(dim) * (sumError + wn);
 
-      if(debugLevel>0) prevTasks[i]->name() = "Task" + i;
+      if(debugLevel>0) prevTasks[i]->name() = std::string("Task") + std::to_string(i);
     }
 
     // solve

@@ -15,7 +15,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES prioritized_inverse_kinematics_solver
   CATKIN_DEPENDS ik_constraint prioritized_qp
-#  DEPENDS system_lib
+  DEPENDS OsqpEigen
 )
 
 ###########

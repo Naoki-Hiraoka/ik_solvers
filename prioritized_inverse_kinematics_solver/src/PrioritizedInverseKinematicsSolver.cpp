@@ -129,6 +129,11 @@ namespace prioritized_inverse_kinematics_solver {
       idx += IK::IKConstraint::getJointDOF(variables[i]);
     }
 
+    if(debugLevel>0) {
+      double time = timer.measure();
+      std::cerr << "[PrioritizedIK] solveIKOnce time: " << time << "[s]" << std::endl;
+    }
+
   }
 
   int solveIKLoop (const std::vector<cnoid::LinkPtr>& variables,

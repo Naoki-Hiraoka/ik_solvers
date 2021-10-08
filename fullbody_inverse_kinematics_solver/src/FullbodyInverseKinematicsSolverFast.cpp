@@ -1,6 +1,7 @@
 #include <fullbody_inverse_kinematics_solver/FullbodyInverseKinematicsSolverFast.h>
 #include <Eigen/Sparse>
 #include <iostream>
+#include <iomanip>
 #include <Eigen/SparseCholesky>
 
 namespace fik {
@@ -141,7 +142,7 @@ namespace fik {
     while (loop < max_iteration) {
       robot->calcForwardKinematics();
       robot->calcCenterOfMass();
-      if (checkIKConvergence(ikc_list)) break;
+      if (checkIKConvergence(ikc_list)) return loop;
       solveFullbodyIKOnceFast(robot, ikc_list, dq_weight_all, jlim_avoid_weight_old, wn, debugLevel);
       ++loop;
     }

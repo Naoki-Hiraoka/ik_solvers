@@ -1,8 +1,6 @@
 #ifndef FULLBODY_INVERSE_KINEMATICS_SOLVER_FAST_H
 #define FULLBODY_INVERSE_KINEMATICS_SOLVER_FAST_H
 
-#include <iomanip>
-#include <cnoid/JointPath>
 #include <cnoid/Body>
 #include <ik_constraint/IKConstraint.h>
 

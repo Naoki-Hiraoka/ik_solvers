@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>fullbody_inverse_kinematics_solver</name>
+  <name>prioritized_inverse_kinematics_solver</name>
   <version>0.0.0</version>
-  <description>The fullbody_inverse_kinematics_solver package</description>
+  <description>The prioritized_inverse_kinematics_solver package</description>
 
   <maintainer email="hiraoka@jsk.imi.i.u-tokyo.ac.jp">Naoki-Hiraoka</maintainer>
 
@@ -10,5 +10,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>ik_constraint</depend>
+  <depend>prioritized_qp</depend>
+  <depend>choreonoid</depend>
 
 </package>

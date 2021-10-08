@@ -35,9 +35,10 @@ namespace IK{
 
     const int& debuglevel() const { return debuglevel_;}
     int& debuglevel() { return debuglevel_;}
+
+    static size_t getJointDOF(const cnoid::LinkPtr& joint);
   protected:
     bool is_joints_same(const std::vector<cnoid::LinkPtr>& joints1,const std::vector<cnoid::LinkPtr>& joints2);
-    size_t getJointDOF(const cnoid::LinkPtr& joint);
 
     int debuglevel_ = 0;
 

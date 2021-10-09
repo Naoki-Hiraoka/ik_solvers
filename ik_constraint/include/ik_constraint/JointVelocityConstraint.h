@@ -1,20 +1,24 @@
-#ifndef IKCONSTRAINT_JOINTLIMITCONSTRAINT_H
-#define IKCONSTRAINT_JOINTLIMITCONSTRAINT_H
+#ifndef IKCONSTRAINT_JOINTVELOCITYCONSTRAINT_H
+#define IKCONSTRAINT_JOINTVELOCITYCONSTRAINT_H
 
 #include <ik_constraint/IKConstraint.h>
 #include <cnoid/EigenUtil>
 
 namespace IK{
-  class JointLimitConstraint : public IKConstraint
+  class JointVelocityConstraint : public IKConstraint
   {
   public:
-    //jointのqとtargetqを一致させる.
-    //  maxError: エラーの頭打ち
-    //  precision: 収束判定の閾値
+    //jointのdqを上下限以下にする. radの次元で評価する
+    //  dt: [s]
+    //  maxError: エラーの頭打ち[rad]
+    //  precision: 収束判定の閾値[rad]
     //  weight: コスト関数の重み. error * weight^2 * error.
 
     const cnoid::LinkPtr& joint() const { return joint_;}
     cnoid::LinkPtr& joint() { return joint_;}
+    const double& dt() const { return dt_;}
+    double& dt() { return dt_;}
+
     const double& maxError() const { return maxError_;}
     double& maxError() { return maxError_;}
     const double& precision() const { return precision_;}
@@ -29,6 +33,7 @@ namespace IK{
 
   private:
     cnoid::LinkPtr joint_ = nullptr;
+    double dt_ = 0.1;
     double precision_ = 1e10;
     double maxError_ = 1e-2;
     double weight_ = 1.0;

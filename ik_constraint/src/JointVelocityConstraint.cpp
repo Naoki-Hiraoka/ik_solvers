@@ -1,15 +1,15 @@
-#include <ik_constraint/JointLimitConstraint.h>
+#include <ik_constraint/JointVelocityConstraint.h>
 #include <iostream>
 
 namespace IK{
-  bool JointLimitConstraint::checkConvergence () {
+  bool JointVelocityConstraint::checkConvergence () {
     if(!this->joint_ || !(this->joint_->isRotationalJoint() || this->joint_->isPrismaticJoint())) {
       if(this->error_.rows() != 1) this->error_ = Eigen::VectorXd::Zero(1);
       return true;
     }
 
-    double lower = this->joint_->q_lower() - this->joint_->q();
-    double upper = this->joint_->q_upper() - this->joint_->q();
+    double lower = (this->joint_->dq_lower() - this->joint_->dq()) * dt_;
+    double upper = (this->joint_->dq_upper() - this->joint_->dq()) * dt_;
 
     if(this->minineq_.rows() != 1) this->minineq_ = Eigen::VectorXd(1);
     this->minineq_[0] = std::min(this->weight_ * lower, this->maxError_);
@@ -17,7 +17,7 @@ namespace IK{
     this->maxineq_[0] = std::max(this->weight_ * upper, -this->maxError_);
 
     if(this->debuglevel_>=1){
-      std::cerr << "JointLimitConstraint" << std::endl;
+      std::cerr << "JointVelocityConstraint" << std::endl;
       std::cerr << "q" << std::endl;
       std::cerr << this->joint_->q() << std::endl;
       std::cerr << "q_upper" << std::endl;
@@ -29,7 +29,7 @@ namespace IK{
     return lower<this->precision_ && upper>-this->precision_;
   }
 
-  const Eigen::SparseMatrix<double,Eigen::RowMajor>& JointLimitConstraint::calc_jacobianineq (const std::vector<cnoid::LinkPtr>& joints) {
+  const Eigen::SparseMatrix<double,Eigen::RowMajor>& JointVelocityConstraint::calc_jacobianineq (const std::vector<cnoid::LinkPtr>& joints) {
     if(!this->is_joints_same(joints,this->jacobianineq_joints_) ||
        this->joint_ != this->jacobianineq_joint_){
       this->jacobianineq_joints_ = joints;
@@ -58,16 +58,16 @@ namespace IK{
     }
 
     if(this->debuglevel_>=1){
-      std::cerr << "JointLimitConstraint" << std::endl;
+      std::cerr << "JointVelocityConstraint" << std::endl;
       std::cerr << "jacobianineq" << std::endl;
       std::cerr << this->jacobianineq_ << std::endl;
     }
     return this->jacobianineq_;
   }
 
-  const Eigen::VectorXd& JointLimitConstraint::calc_minineq () {
+  const Eigen::VectorXd& JointVelocityConstraint::calc_minineq () {
     if(this->debuglevel_>=1){
-      std::cerr << "JointLimitConstraint" << std::endl;
+      std::cerr << "JointVelocityConstraint" << std::endl;
       std::cerr << "minineq" << std::endl;
       std::cerr << this->minineq_ << std::endl;
     }
@@ -75,9 +75,9 @@ namespace IK{
     return this->minineq_;
   }
 
-  const Eigen::VectorXd& JointLimitConstraint::calc_maxineq () {
+  const Eigen::VectorXd& JointVelocityConstraint::calc_maxineq () {
     if(this->debuglevel_>=1){
-      std::cerr << "JointLimitConstraint" << std::endl;
+      std::cerr << "JointVelocityConstraint" << std::endl;
       std::cerr << "maxineq" << std::endl;
       std::cerr << this->maxineq_ << std::endl;
     }

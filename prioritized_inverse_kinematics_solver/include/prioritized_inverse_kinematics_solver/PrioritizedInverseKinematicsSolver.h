@@ -16,7 +16,8 @@ namespace prioritized_inverse_kinematics_solver {
                    std::vector<std::shared_ptr<prioritized_qp::Task> >& prevTasks,
                    size_t max_iteration = 1,
                    double wn = 1e-6,
-                   int debugLevel = 0);
+                   int debugLevel = 0,
+                   double dt = 0.1);
 
 }
 

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <set>
+#include <unordered_map>
 #include <cnoid/TimeMeasure>
 
 namespace prioritized_inverse_kinematics_solver {
@@ -89,7 +90,11 @@ namespace prioritized_inverse_kinematics_solver {
       }
 
       double sumError = 0;
-      for(size_t j=0;j<ikc_list[i].size(); j++) sumError += errors[j].get().squaredNorm();
+      sumError += prevTasks[i]->b().squaredNorm();
+      for(size_t j=0;j<prevTasks[i]->dl().size(); j++) {
+        if(prevTasks[i]->dl()[j]>0) sumError += std::pow(prevTasks[i]->dl()[j],2);
+        if(prevTasks[i]->du()[j]<0) sumError += std::pow(prevTasks[i]->du()[j],2);
+      }
       prevTasks[i]->w() = cnoid::VectorXd::Ones(dim) * (sumError + wn);
 
       if(debugLevel>0) prevTasks[i]->name() = std::string("Task") + std::to_string(i);
@@ -136,21 +141,50 @@ namespace prioritized_inverse_kinematics_solver {
 
   }
 
+  class InitialJointState {
+  public:
+    InitialJointState() {}
+    InitialJointState(const cnoid::Position& T_): T(T_) {}
+    InitialJointState(double q_): q(q_) {}
+    cnoid::Position T;
+    double q;
+  };
+
   int solveIKLoop (const std::vector<cnoid::LinkPtr>& variables,
                    const std::vector<std::vector<std::shared_ptr<IK::IKConstraint> > >& ikc_list,
                    std::vector<std::shared_ptr<prioritized_qp::Task> >& prevTasks,
                    size_t max_iteration,
                    double wn,
-                   int debugLevel) {
+                   int debugLevel,
+                   double dt) {
     std::set<cnoid::BodyPtr> bodies;
     for(size_t i=0;i<variables.size();i++){
       if(variables[i]->body()) bodies.insert(variables[i]->body());
     }
 
+    std::unordered_map<cnoid::LinkPtr, InitialJointState> initialJointStateMap;
+    for(size_t i=0;i<variables.size();i++){
+      if(variables[i]->isFreeJoint()) initialJointStateMap[variables[i]] = InitialJointState(variables[i]->T());
+      else if(variables[i]->isRotationalJoint() || variables[i]->isPrismaticJoint()) initialJointStateMap[variables[i]] = InitialJointState(variables[i]->q());
+      else initialJointStateMap[variables[i]] = InitialJointState();
+    }
+
     size_t loop = 0;
     while (loop < max_iteration) {
+      for(size_t i=0;i<variables.size();i++){
+        if(variables[i]->isFreeJoint()) {
+          cnoid::Position& initialT = initialJointStateMap[variables[i]].T;
+          variables[i]->v() = (variables[i]->p() - initialT.translation()) / dt;
+          cnoid::AngleAxis angleAxis = cnoid::AngleAxis(variables[i]->R() * initialT.linear().transpose());
+          variables[i]->w() = angleAxis.angle()*angleAxis.axis() / dt;
+        }
+        else if(variables[i]->isRotationalJoint() || variables[i]->isPrismaticJoint()) {
+          double initialq = initialJointStateMap[variables[i]].q;
+          variables[i]->dq() = (variables[i]->q() - initialq) / dt;
+        }
+      }
       for(std::set<cnoid::BodyPtr>::iterator it=bodies.begin(); it != bodies.end(); it++){
-        (*it)->calcForwardKinematics();
+        (*it)->calcForwardKinematics(true);
         (*it)->calcCenterOfMass();
       }
 
@@ -159,8 +193,20 @@ namespace prioritized_inverse_kinematics_solver {
       ++loop;
     }
 
+    for(size_t i=0;i<variables.size();i++){
+      if(variables[i]->isFreeJoint()) {
+        cnoid::Position& initialT = initialJointStateMap[variables[i]].T;
+        variables[i]->v() = (variables[i]->p() - initialT.translation()) / dt;
+        cnoid::AngleAxis angleAxis = cnoid::AngleAxis(variables[i]->R() * initialT.linear().transpose());
+        variables[i]->w() = angleAxis.angle()*angleAxis.axis() / dt;
+      }
+      else if(variables[i]->isRotationalJoint() || variables[i]->isPrismaticJoint()) {
+        double initialq = initialJointStateMap[variables[i]].q;
+        variables[i]->dq() = (variables[i]->q() - initialq) / dt;
+      }
+    }
     for(std::set<cnoid::BodyPtr>::iterator it=bodies.begin(); it != bodies.end(); it++){
-      (*it)->calcForwardKinematics();
+      (*it)->calcForwardKinematics(true);
       (*it)->calcCenterOfMass();
     }
 

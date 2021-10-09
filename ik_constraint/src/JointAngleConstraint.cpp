@@ -5,7 +5,7 @@ namespace IK{
   bool JointAngleConstraint::checkConvergence () {
     if(!this->joint_) return true;
 
-    double error = this->joint_->q() - targetq_;
+    double error = std::min(std::max(this->joint_->q() - targetq_,-this->maxError_), this->maxError_);
 
     if(this->error_.rows() != 1) this->error_ = Eigen::VectorXd(1);
     this->error_[0] = this->weight_ * error;

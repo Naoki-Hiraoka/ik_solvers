@@ -8,7 +8,7 @@ namespace IK{
   class JointLimitConstraint : public IKConstraint
   {
   public:
-    //jointのqとtargetqを一致させる.
+    //jointのqをq_upperとq_lowerの間にさせる.
     //  maxError: エラーの頭打ち
     //  precision: 収束判定の閾値
     //  weight: コスト関数の重み. error * weight^2 * error.
@@ -22,12 +22,12 @@ namespace IK{
     const double& weight() const { return weight_;}
     double& weight() { return weight_;}
 
-    bool checkConvergence () override;
-    const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobianineq (const std::vector<cnoid::LinkPtr>& joints) override;
-    const Eigen::VectorXd& calc_minineq () override;
-    const Eigen::VectorXd& calc_maxineq () override;
+    virtual bool checkConvergence () override;
+    virtual const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobianineq (const std::vector<cnoid::LinkPtr>& joints) override;
+    virtual const Eigen::VectorXd& calc_minineq () override;
+    virtual const Eigen::VectorXd& calc_maxineq () override;
 
-  private:
+  protected:
     cnoid::LinkPtr joint_ = nullptr;
     double precision_ = 1e10;
     double maxError_ = 1e-2;

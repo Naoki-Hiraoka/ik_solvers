@@ -4,7 +4,8 @@
 namespace IK{
   bool JointLimitConstraint::checkConvergence () {
     if(!this->joint_ || !(this->joint_->isRotationalJoint() || this->joint_->isPrismaticJoint())) {
-      if(this->error_.rows() != 1) this->error_ = Eigen::VectorXd::Zero(1);
+      if(this->minineq_.rows() != 1) this->minineq_ = Eigen::VectorXd::Zero(1);
+      if(this->maxineq_.rows() != 1) this->maxineq_ = Eigen::VectorXd::Zero(1);
       return true;
     }
 

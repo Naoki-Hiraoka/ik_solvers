@@ -4,9 +4,8 @@
 #include <ik_constraint/JointLimitConstraint.h>
 #include <joint_limit_table/JointLimitTable.h>
 
-namespace IK{
-  class JointLimitMinMaxTableConstraint : public JointLimitConstraint
-  {
+namespace ik_constraint_joint_limit_table{
+  class JointLimitMinMaxTableConstraint : public IK::JointLimitConstraint {
   public:
     //jointのqをq_upperとq_lowerの間かつmin-max-tableの間にさせる.
     //  maxError: エラーの頭打ち

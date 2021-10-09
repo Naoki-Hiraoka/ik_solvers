@@ -1,7 +1,7 @@
 #include <ik_constraint_joint_limit_table/JointLimitMinMaxTableConstraint.h>
 #include <iostream>
 
-namespace IK{
+namespace ik_constraint_joint_limit_table{
   bool JointLimitMinMaxTableConstraint::checkConvergence () {
     if(this->minineq_.rows() != 1) this->minineq_ = Eigen::VectorXd::Zero(1);
       if(this->maxineq_.rows() != 1) this->maxineq_ = Eigen::VectorXd::Zero(1);
@@ -29,6 +29,7 @@ namespace IK{
       std::cerr << "q: " << this->joint_->q() << std::endl;
       std::cerr << "upper: " << upper << std::endl;
       std::cerr << "lower: " << lower << std::endl;
+      std::cerr << "tables: " << this->jointLimitTables_.size()<<std::endl;
     }
 
     return lower<this->precision_ && upper>-this->precision_;

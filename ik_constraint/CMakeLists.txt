@@ -40,6 +40,7 @@ add_library(${PROJECT_NAME}
   src/JointAngleConstraint.cpp
   src/JointLimitConstraint.cpp
   src/JointVelocityConstraint.cpp
+  src/CollisionConstraint.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

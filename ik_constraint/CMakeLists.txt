@@ -33,6 +33,7 @@ foreach(lib ${CHOREONOID_BODY_LIBRARIES})
 endforeach(lib)
 
 add_library(${PROJECT_NAME}
+  src/Jacobian.cpp
   src/IKConstraint.cpp
   src/PositionConstraint.cpp
   src/COMConstraint.cpp

@@ -17,17 +17,25 @@ namespace IK{
     if(this->maxineq_.rows()!=1) this->maxineq_ = Eigen::VectorXd::Zero(1);
 
     double distance;
+    bool ret;
     if(!this->computeDistance(this->A_link_, this->B_link_,
                               distance, this->currentDirection_, this->A_currentLocalp_,this->B_currentLocalp_)){
       this->minineq_[0] = -1e10;
       this->maxineq_[0] = 1e10;
-      return true;
+      ret = true;
     }else{
       this->minineq_[0] = (this->tolerance_ - distance) * this->weight_;
       this->maxineq_[0] = 1e10;
 
-      return distance - this->tolerance_ > - this->precision_;
+      ret =  distance - this->tolerance_ > - this->precision_;
     }
+
+    if(this->debuglevel_>=1){
+      std::cerr << "CollisionConstraint " << this->A_link_->name() << " - " << this->B_link_->name() << std::endl;
+      std::cerr << "distance: " << distance << std::endl;
+    }
+
+    return ret;
   }
 
   const Eigen::SparseMatrix<double,Eigen::RowMajor>& CollisionConstraint::calc_jacobianineq (const std::vector<cnoid::LinkPtr>& joints) {
@@ -70,7 +78,7 @@ namespace IK{
 
     Eigen::SparseMatrix<double,Eigen::RowMajor> dir(3,1);
     for(int i=0;i<3;i++) dir.insert(i,0) = this->currentDirection_[i];
-    this->jacobianineq_ = dir.transpose() * this->jacobianineq_full_.topRows<3>();
+    this->jacobianineq_ = dir.transpose() * this->jacobianineq_full_.topRows<3>() * this->weight_;
 
     if(this->debuglevel_>=1){
       std::cerr << "CollisionConstraint" << std::endl;
@@ -93,7 +101,7 @@ namespace IK{
 
   const Eigen::VectorXd& CollisionConstraint::calc_maxineq () {
     if(this->debuglevel_>=1){
-      std::cerr << "JointLimitConstraint" << std::endl;
+      std::cerr << "CollisionConstraint" << std::endl;
       std::cerr << "maxineq" << std::endl;
       std::cerr << this->maxineq_ << std::endl;
     }

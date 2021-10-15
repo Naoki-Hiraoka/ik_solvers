@@ -6,7 +6,7 @@ namespace IK {
   }
 
 
-  bool ClientCollisionConstraint::computeDistance(const cnoid::LinkPtr A_link, const cnoid::LinkPtr B_link, double& distance, cnoid::Vector3 direction/*B->A*/, cnoid::Vector3& A_v, cnoid::Vector3& B_v) {
+  bool ClientCollisionConstraint::computeDistance(const cnoid::LinkPtr A_link, const cnoid::LinkPtr B_link, double& distance, cnoid::Vector3& direction/*B->A*/, cnoid::Vector3& A_v, cnoid::Vector3& B_v) {
     if (this->direction_.norm() == 0) return false;
     direction = this->direction_.normalized();
     A_v = this->A_localp_;

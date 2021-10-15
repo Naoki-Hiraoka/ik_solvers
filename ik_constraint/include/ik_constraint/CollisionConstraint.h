@@ -36,7 +36,7 @@ namespace IK{
 
   protected:
     //A_v, B_vはlocal系
-    virtual bool computeDistance(const cnoid::LinkPtr A_link, const cnoid::LinkPtr B_link, double& distance, cnoid::Vector3 direction/*B->A*/, cnoid::Vector3& A_v, cnoid::Vector3& B_v)=0;
+    virtual bool computeDistance(const cnoid::LinkPtr A_link, const cnoid::LinkPtr B_link, double& distance, cnoid::Vector3& direction/*B->A*/, cnoid::Vector3& A_v, cnoid::Vector3& B_v)=0;
 
   private:
     cnoid::LinkPtr A_link_ = nullptr;

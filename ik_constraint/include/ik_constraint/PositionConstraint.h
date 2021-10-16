@@ -51,6 +51,7 @@ namespace IK{
     // gradient(-ヤコビアン^T*エラー)を返す
     // TODO
 
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   private:
     cnoid::LinkPtr A_link_ = nullptr;
     cnoid::Position A_localpos_ = cnoid::Position::Identity();

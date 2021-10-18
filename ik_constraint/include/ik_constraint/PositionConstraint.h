@@ -14,9 +14,9 @@ namespace IK{
 
     //A_link中のA_localposの部位とB_link中のB_localposの部位を一致させる.
     //リンクがnullptrならworld座標系を意味する
-    //  maxError: エラーの頭打ち
-    //  precision: 収束判定の閾値
-    //  weight: コスト関数の重み. error * weight^2 * error. 0の成分はjacobianやerrorに含まれない
+    //  maxError: エラーの頭打ち eval系
+    //  precision: 収束判定の閾値 eval系
+    //  weight: コスト関数の重み. error * weight^2 * error. 0の成分はjacobianやerrorに含まれない. eval系
     //状態が更新される度に, 手動でcalcForwardKinematics()を呼ぶ必要が有る.
     const cnoid::LinkPtr& A_link() const { return A_link_;}
     cnoid::LinkPtr& A_link() { return A_link_;}
@@ -32,6 +32,10 @@ namespace IK{
     cnoid::Vector6& precision() { return precision_;}
     const cnoid::Vector6& weight() const { return weight_;}
     cnoid::Vector6& weight() { return weight_;}
+    const cnoid::LinkPtr& eval_link() const { return eval_link_;}
+    cnoid::LinkPtr& eval_link() { return eval_link_;}
+    const cnoid::Matrix3d& eval_localR() const { return eval_localR_;}
+    cnoid::Matrix3d& eval_localR() { return eval_localR_;}
 
     // 収束判定
     bool checkConvergence () override;
@@ -60,6 +64,8 @@ namespace IK{
     cnoid::Vector6 maxError_;
     cnoid::Vector6 precision_;
     cnoid::Vector6 weight_ = cnoid::Vector6::Ones();
+    cnoid::LinkPtr eval_link_ = nullptr;
+    cnoid::Matrix3d eval_localR_ = cnoid::Matrix3d::Identity();
 
     cnoid::SgLineSetPtr lines_;
 
@@ -68,6 +74,7 @@ namespace IK{
     std::vector<cnoid::LinkPtr> path_BA_joints_;
     int path_BA_joints_numUpwardConnections_;
     Eigen::SparseMatrix<double,Eigen::RowMajor> jacobian_full_;
+    Eigen::SparseMatrix<double,Eigen::RowMajor> jacobian_full_local_;
     cnoid::LinkPtr jacobian_A_link_ = nullptr;// 前回のjacobian計算時のA_link
     cnoid::LinkPtr jacobian_B_link_ = nullptr;// 前回のjacobian計算時のB_link
   };

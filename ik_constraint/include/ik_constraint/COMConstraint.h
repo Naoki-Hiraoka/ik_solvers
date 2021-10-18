@@ -25,6 +25,8 @@ namespace IK{
     cnoid::Vector3& precision() { return precision_;}
     const cnoid::Vector3& weight() const { return weight_;}
     cnoid::Vector3& weight() { return weight_;}
+    const cnoid::Matrix3d& eval_R() const { return eval_R_;}
+    cnoid::Matrix3d& eval_R() { return eval_R_;}
 
     // 収束判定
     bool checkConvergence () override;
@@ -40,6 +42,7 @@ namespace IK{
     cnoid::Vector3 maxError_ = 0.1 * cnoid::Vector3::Ones();
     cnoid::Vector3 precision_ = 1e-4 * cnoid::Vector3::Ones();
     cnoid::Vector3 weight_ = cnoid::Vector3::Ones();
+    cnoid::Matrix3d eval_R_ = cnoid::Matrix3d::Identity();
 
     cnoid::BodyPtr jacobian_robot_ = nullptr;// 前回のjacobian計算時のrobot
 

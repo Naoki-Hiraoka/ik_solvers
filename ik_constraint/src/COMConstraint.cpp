@@ -4,6 +4,7 @@
 namespace IK{
   bool COMConstraint::checkConvergence () {
     cnoid::Vector3 error = this->robot_->centerOfMass() - this->targetPos_;
+    error = (this->eval_R_.transpose() * error).eval();
 
     // 収束判定と、ついでにcalc_errorの返り値の計算
     if(this->error_.rows()!=(this->weight_.array() > 0.0).count()) this->error_ = Eigen::VectorXd((this->weight_.array() > 0.0).count());
@@ -85,6 +86,7 @@ namespace IK{
     if(this->jacobian_robot_){
       Eigen::MatrixXd CMJ;
       cnoid::calcCMJacobian(this->jacobian_robot_,nullptr,CMJ); // [joint root]の順
+      CMJ = (this->eval_R_.transpose() * CMJ).eval();
 
       if(this->jacobianColMap_.find(this->jacobian_robot_->rootLink()) != this->jacobianColMap_.end()){
         int col_idx = this->jacobianColMap_[this->jacobian_robot_->rootLink()];

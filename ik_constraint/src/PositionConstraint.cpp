@@ -15,6 +15,10 @@ namespace IK{
     cnoid::AngleAxis angleAxis = cnoid::AngleAxis(A_pos.linear() * B_pos.linear().transpose());
     error << A_pos.translation() - B_pos.translation() , angleAxis.angle()*angleAxis.axis();
 
+    cnoid::Matrix3d eval_R = (this->eval_link_) ? this->eval_link_->R() * this->eval_localR_ : this->eval_localR_;
+    error.head<3>() = (eval_R.transpose() * error.head<3>()).eval();
+    error.tail<3>() = (eval_R.transpose() * error.tail<3>()).eval();
+
     // 収束判定と、ついでにcalc_errorの返り値の計算
     if(this->error_.rows()!=(this->weight_.array() > 0.0).count()) this->error_ = Eigen::VectorXd((this->weight_.array() > 0.0).count());
     bool converged = true;
@@ -85,10 +89,17 @@ namespace IK{
                              this->jacobian_full_
                              );
 
-    this->jacobian_.resize((this->weight_.array() > 0.0).count(),this->jacobian_full_.cols());
+    cnoid::Matrix3d eval_R_dense = (this->eval_link_) ? this->eval_link_->R() * this->eval_localR_ : this->eval_localR_;
+    Eigen::SparseMatrix<double,Eigen::RowMajor> eval_R(3,3);
+    for(int i=0;i<3;i++) for(int j=0;j<3;j++) eval_R.insert(i,j) = eval_R_dense(i,j);
+    this->jacobian_full_local_.resize(this->jacobian_full_.rows(), this->jacobian_full_.cols());
+    this->jacobian_full_local_.topRows<3>() = eval_R.transpose() * this->jacobian_full_.topRows<3>();
+    this->jacobian_full_local_.bottomRows<3>() = eval_R.transpose() * this->jacobian_full_.bottomRows<3>();
+
+    this->jacobian_.resize((this->weight_.array() > 0.0).count(),this->jacobian_full_local_.cols());
     for(size_t i=0, idx=0;i<6;i++){
       if(this->weight_[i]>0.0) {
-        this->jacobian_.row(idx) = this->weight_[i] * this->jacobian_full_.row(i);
+        this->jacobian_.row(idx) = this->weight_[i] * this->jacobian_full_local_.row(i);
         idx++;
       }
     }

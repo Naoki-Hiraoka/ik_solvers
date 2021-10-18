@@ -65,7 +65,7 @@ namespace IK{
     cnoid::Vector3 precision_ = 1e-4 * cnoid::Vector3::Ones();
     cnoid::Vector3 weight_ = cnoid::Vector3::Ones();
 
-    Eigen::SparseMatrix<double,Eigen::RowMajor> C_;
+    Eigen::SparseMatrix<double,Eigen::RowMajor> C_ = Eigen::SparseMatrix<double,Eigen::RowMajor>(0,3);
     cnoid::VectorX dl_;
     cnoid::VectorX du_;
     cnoid::VectorX maxCError_;

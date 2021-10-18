@@ -51,6 +51,9 @@ namespace IK{
 
     const Eigen::VectorXd& calc_error () override;
     const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobian (const std::vector<cnoid::LinkPtr>& joints) override;
+    const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobianineq (const std::vector<cnoid::LinkPtr>& joints) override;
+    const Eigen::VectorXd& calc_minineq () override;
+    const Eigen::VectorXd& calc_maxineq () override;
   protected:
     cnoid::BodyPtr A_robot_ = nullptr;
     cnoid::Vector3 A_localp_ = cnoid::Vector3::Zero();
@@ -70,7 +73,25 @@ namespace IK{
 
     cnoid::BodyPtr jacobian_A_robot_ = nullptr;// 前回のjacobian計算時のrobot
     cnoid::BodyPtr jacobian_B_robot_ = nullptr;// 前回のjacobian計算時のrobot
+    Eigen::SparseMatrix<double,Eigen::RowMajor> jacobian_full_;
+    Eigen::SparseMatrix<double,Eigen::RowMajor> jacobian_full_local_;
+    cnoid::BodyPtr jacobianineq_A_robot_ = nullptr;// 前回のjacobian計算時のrobot
+    cnoid::BodyPtr jacobianineq_B_robot_ = nullptr;// 前回のjacobian計算時のrobot
+    Eigen::SparseMatrix<double,Eigen::RowMajor> jacobianineq_full_;
+    Eigen::SparseMatrix<double,Eigen::RowMajor> jacobianineq_full_local_;
 
+    static void calcCMJacobianShape(const std::vector<cnoid::LinkPtr>& joints,//input
+                                    const cnoid::BodyPtr& A_robot,//input
+                                    const cnoid::BodyPtr& B_robot,//input
+                                    Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian,//output
+                                    std::unordered_map<cnoid::LinkPtr,int>& jacobianColMap //output
+                                    );
+    static void calcCMJacobianCoef(const std::vector<cnoid::LinkPtr>& joints,//input
+                                   const cnoid::BodyPtr& A_robot,//input
+                                   const cnoid::BodyPtr& B_robot,//input
+                                   std::unordered_map<cnoid::LinkPtr,int>& jacobianColMap, //input
+                                   Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian//output
+                                   );
   };
 }
 

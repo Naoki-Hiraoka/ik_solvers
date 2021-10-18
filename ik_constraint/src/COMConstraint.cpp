@@ -3,7 +3,10 @@
 
 namespace IK{
   bool COMConstraint::checkConvergence () {
-    cnoid::Vector3 error = this->robot_->centerOfMass() - this->targetPos_;
+    // A - B
+    cnoid::Vector3 A_p = this->A_robot_ ? this->A_robot_->centerOfMass() + this->A_localp() : this->A_localp();
+    cnoid::Vector3 B_p = this->B_robot_ ? this->B_robot_->centerOfMass() + this->B_localp() : this->B_localp();
+    cnoid::Vector3 error = A_p - B_p;
     error = (this->eval_R_.transpose() * error).eval();
 
     // 収束判定と、ついでにcalc_errorの返り値の計算
@@ -20,10 +23,10 @@ namespace IK{
 
     if(this->debuglevel_>=1){
       std::cerr << "COMConstraint" << std::endl;
-      std::cerr << "COM" << std::endl;
-      std::cerr << this->robot_->centerOfMass().transpose() << std::endl;
-      std::cerr << "targetPos" << std::endl;
-      std::cerr << this->targetPos_.transpose() << std::endl;
+      std::cerr << "A COM" << std::endl;
+      std::cerr << A_p.transpose() << std::endl;
+      std::cerr << "B COM" << std::endl;
+      std::cerr << B_p.transpose() << std::endl;
     }
 
     return converged;
@@ -42,10 +45,12 @@ namespace IK{
   const Eigen::SparseMatrix<double,Eigen::RowMajor>& COMConstraint::calc_jacobian (const std::vector<cnoid::LinkPtr>& joints) {
     // 行列の初期化. 前回とcol形状が変わっていないなら再利用
     if(!this->is_joints_same(joints,this->jacobian_joints_)
-       || this->robot_ != this->jacobian_robot_
+       || this->A_robot_ != this->jacobian_A_robot_
+       || this->B_robot_ != this->jacobian_B_robot_
        || (this->weight_.array() > 0.0).count() != this->jacobian_.rows()){
       this->jacobian_joints_ = joints;
-      this->jacobian_robot_ = this->robot_;
+      this->jacobian_A_robot_ = this->A_robot_;
+      this->jacobian_B_robot_ = this->B_robot_;
 
       int rows = (this->weight_.array() > 0.0).count();
       this->jacobianColMap_.clear();
@@ -58,58 +63,68 @@ namespace IK{
 
       std::vector<Eigen::Triplet<double> > tripletList;
       tripletList.reserve(100);//適当
-      if(this->jacobian_robot_){
-        if(this->jacobianColMap_.find(this->jacobian_robot_->rootLink()) != this->jacobianColMap_.end()){
-          int idx = this->jacobianColMap_[this->jacobian_robot_->rootLink()];
-          for(size_t row=0;row<rows;row++){
-            for(size_t i=0;i<this->getJointDOF(this->jacobian_robot_->rootLink());i++){
-              tripletList.push_back(Eigen::Triplet<double>(row,idx+i,1));
+
+      if(this->jacobian_A_robot_ != this->jacobian_B_robot_){
+        for(int i=0;i<2;i++){
+          cnoid::BodyPtr robot = (i==0) ? this->jacobian_A_robot_ : this->jacobian_B_robot_;
+          if(!robot) continue;
+          if(this->jacobianColMap_.find(robot->rootLink()) != this->jacobianColMap_.end()){
+            int idx = this->jacobianColMap_[robot->rootLink()];
+            for(size_t row=0;row<rows;row++){
+              for(size_t j=0;j<this->getJointDOF(robot->rootLink());j++){
+                tripletList.push_back(Eigen::Triplet<double>(row,idx+j,1));
+              }
             }
           }
-        }
-        for(size_t j=0;j<this->jacobian_robot_->numJoints();j++){
-          if(this->jacobianColMap_.find(this->jacobian_robot_->joint(j)) != this->jacobianColMap_.end()){
-            int idx = this->jacobianColMap_[this->jacobian_robot_->joint(j)];
-            for(size_t row=0;row<rows;row++){
-              for(size_t i=0;i<this->getJointDOF(this->jacobian_robot_->joint(j));i++){
-                tripletList.push_back(Eigen::Triplet<double>(row,idx+i,1));
+          for(size_t j=0;j<robot->numJoints();j++){
+            if(this->jacobianColMap_.find(robot->joint(j)) != this->jacobianColMap_.end()){
+              int idx = this->jacobianColMap_[robot->joint(j)];
+              for(size_t row=0;row<rows;row++){
+                for(size_t k=0;k<this->getJointDOF(robot->joint(j));k++){
+                  tripletList.push_back(Eigen::Triplet<double>(row,idx+k,1));
+                }
               }
             }
           }
         }
-
       }
 
       this->jacobian_.setFromTriplets(tripletList.begin(), tripletList.end());
     }
 
-    if(this->jacobian_robot_){
-      Eigen::MatrixXd CMJ;
-      cnoid::calcCMJacobian(this->jacobian_robot_,nullptr,CMJ); // [joint root]の順
-      CMJ = (this->eval_R_.transpose() * CMJ).eval();
+    if(this->jacobian_A_robot_ != this->jacobian_B_robot_){
+      for(size_t i=0;i<2; i++){
+        cnoid::BodyPtr robot = (i==0) ? this->jacobian_A_robot_ : this->jacobian_B_robot_;
+        if(!robot) continue;
+        int sign = (i==0) ? 1 : -1;
 
-      if(this->jacobianColMap_.find(this->jacobian_robot_->rootLink()) != this->jacobianColMap_.end()){
-        int col_idx = this->jacobianColMap_[this->jacobian_robot_->rootLink()];
-        int row_idx=0;
-        for(size_t i=0;i<3;i++){
-          if(this->weight_[i]>0.0){
-            for(size_t j=0;j<this->getJointDOF(this->jacobian_robot_->rootLink());j++){
-              this->jacobian_.coeffRef(row_idx,col_idx+j) = this->weight_[i] * CMJ(i,this->jacobian_robot_->numJoints()+j);
-            }
-            row_idx++;
-          }
-        }
-      }
-      for(size_t j=0;j<this->jacobian_robot_->numJoints();j++){
-        if(this->jacobianColMap_.find(this->jacobian_robot_->joint(j)) != this->jacobianColMap_.end()){
-          int col_idx = this->jacobianColMap_[this->jacobian_robot_->joint(j)];
+        Eigen::MatrixXd CMJ;
+        cnoid::calcCMJacobian(robot,nullptr,CMJ); // [joint root]の順
+        CMJ = (this->eval_R_.transpose() * CMJ).eval();
+
+        if(this->jacobianColMap_.find(robot->rootLink()) != this->jacobianColMap_.end()){
+          int col_idx = this->jacobianColMap_[robot->rootLink()];
           int row_idx=0;
-          for(size_t i=0;i<3;i++){
-            if(this->weight_[i]>0.0){
-              for(size_t d=0;d<this->getJointDOF(this->jacobian_robot_->joint(j));d++){
-                this->jacobian_.coeffRef(row_idx,col_idx+d) = this->weight_[i] * CMJ(i,j+d);
+          for(size_t j=0;j<3;j++){
+            if(this->weight_[j]>0.0){
+              for(size_t k=0;k<this->getJointDOF(robot->rootLink());k++){
+                this->jacobian_.coeffRef(row_idx,col_idx+k) = this->weight_[j] * sign * CMJ(j,robot->numJoints()+k);
               }
               row_idx++;
+            }
+          }
+        }
+        for(size_t j=0;j<robot->numJoints();j++){
+          if(this->jacobianColMap_.find(robot->joint(j)) != this->jacobianColMap_.end()){
+            int col_idx = this->jacobianColMap_[robot->joint(j)];
+            int row_idx=0;
+            for(size_t k=0;k<3;k++){
+              if(this->weight_[k]>0.0){
+                for(size_t d=0;d<this->getJointDOF(robot->joint(j));d++){
+                  this->jacobian_.coeffRef(row_idx,col_idx+d) = this->weight_[k] * sign * CMJ(k,j+d);
+                }
+                row_idx++;
+              }
             }
           }
         }
@@ -123,24 +138,6 @@ namespace IK{
     }
 
     return this->jacobian_;
-  }
-
-  std::vector<cnoid::SgNodePtr>& COMConstraint::getDrawOnObjects() {
-
-    if(!this->COMMarker_){
-      this->COMMarker_ = new cnoid::CrossMarker(0.2/*size*/,cnoid::Vector3f(0.5,1.0,0.0)/*color*/,10/*width*/);
-    }
-    if(!this->targetMarker_){
-      this->targetMarker_ = new cnoid::CrossMarker(0.2/*size*/,cnoid::Vector3f(0.5,1.0,0.0)/*color*/,10/*width*/);
-    }
-
-    // update position
-    this->COMMarker_->setTranslation(this->robot_->centerOfMass().cast<Eigen::Vector3f::Scalar>());
-    this->targetMarker_->setTranslation(this->targetPos_.cast<Eigen::Vector3f::Scalar>());
-
-    this->drawOnObjects_ = std::vector<cnoid::SgNodePtr>{this->COMMarker_,this->targetMarker_};
-
-    return this->drawOnObjects_;
   }
 
 }

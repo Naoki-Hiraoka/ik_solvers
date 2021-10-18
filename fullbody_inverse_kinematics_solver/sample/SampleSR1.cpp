@@ -70,8 +70,8 @@ int main(void){
   {
     // task: COM to target
     std::shared_ptr<IK::COMConstraint> constraint = std::make_shared<IK::COMConstraint>();
-    constraint->robot() = robot;
-    constraint->targetPos() = cnoid::Vector3(0.0,0.0,0.7);
+    constraint->A_robot() = robot;
+    constraint->B_localp() = cnoid::Vector3(0.0,0.0,0.7);
     constraints.push_back(constraint);
   }
   {

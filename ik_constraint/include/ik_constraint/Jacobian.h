@@ -36,6 +36,23 @@ namespace IK {
                             Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian //output
                             );
 
+  // world座標系で見た、A - B のヤコビアン. robotがnullptrの場合、world座標を意味する.
+  //   jacobianを新たにコンストラクトし、非ゼロ要素に1を入れる.
+  void calcCMJacobianShape(const std::vector<cnoid::LinkPtr>& joints,//input
+                                  const cnoid::BodyPtr& A_robot,//input
+                                  const cnoid::BodyPtr& B_robot,//input
+                                  Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian,//output
+                                  std::unordered_map<cnoid::LinkPtr,int>& jacobianColMap //output
+                                  );
+  // world座標系で見た、A - B のヤコビアン. robotがnullptrの場合、world座標を意味する.
+  //   jacobianの形状は上の関数で既に整えられている前提.
+  void calcCMJacobianCoef(const std::vector<cnoid::LinkPtr>& joints,//input
+                          const cnoid::BodyPtr& A_robot,//input
+                          const cnoid::BodyPtr& B_robot,//input
+                          std::unordered_map<cnoid::LinkPtr,int>& jacobianColMap, //input
+                          Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian//output
+                          );
+
 }
 
 #endif

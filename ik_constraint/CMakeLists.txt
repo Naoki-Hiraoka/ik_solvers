@@ -37,6 +37,7 @@ add_library(${PROJECT_NAME}
   src/IKConstraint.cpp
   src/PositionConstraint.cpp
   src/COMConstraint.cpp
+  src/COMVelocityConstraint.cpp
   src/JointAngleConstraint.cpp
   src/JointLimitConstraint.cpp
   src/JointVelocityConstraint.cpp

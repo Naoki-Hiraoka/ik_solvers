@@ -80,18 +80,6 @@ namespace IK{
     Eigen::SparseMatrix<double,Eigen::RowMajor> jacobianineq_full_;
     Eigen::SparseMatrix<double,Eigen::RowMajor> jacobianineq_full_local_;
 
-    static void calcCMJacobianShape(const std::vector<cnoid::LinkPtr>& joints,//input
-                                    const cnoid::BodyPtr& A_robot,//input
-                                    const cnoid::BodyPtr& B_robot,//input
-                                    Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian,//output
-                                    std::unordered_map<cnoid::LinkPtr,int>& jacobianColMap //output
-                                    );
-    static void calcCMJacobianCoef(const std::vector<cnoid::LinkPtr>& joints,//input
-                                   const cnoid::BodyPtr& A_robot,//input
-                                   const cnoid::BodyPtr& B_robot,//input
-                                   std::unordered_map<cnoid::LinkPtr,int>& jacobianColMap, //input
-                                   Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian//output
-                                   );
   };
 }
 

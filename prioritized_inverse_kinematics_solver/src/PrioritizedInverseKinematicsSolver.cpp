@@ -20,7 +20,8 @@ namespace prioritized_inverse_kinematics_solver {
 
   void solveIKOnce (const std::vector<cnoid::LinkPtr>& variables,
                     const std::vector<std::vector<std::shared_ptr<IK::IKConstraint> > >& ikc_list,
-                    std::vector<std::shared_ptr<prioritized_qp::Task> >& prevTasks,
+                    std::vector<std::shared_ptr<prioritized_qp_base::Task> >& prevTasks,
+                    std::function<void(std::shared_ptr<prioritized_qp_base::Task>&,int)> taskGeneratorFunc,
                     double wn,
                     int debugLevel) {
     // Solvability-unconcerned Inverse Kinematics by Levenberg-Marquardt Method [sugihara:RSJ2009]
@@ -36,18 +37,12 @@ namespace prioritized_inverse_kinematics_solver {
 
     if(prevTasks.size() != ikc_list.size()) {
       prevTasks.clear();
-      for(size_t i=0;i<ikc_list.size();i++){
-        prevTasks.push_back(std::make_shared<prioritized_qp::Task>());
-      }
+      prevTasks.resize(ikc_list.size(),nullptr);
     }
     for(size_t i=0;i<ikc_list.size();i++){
-      prevTasks[i]->toSolve() = true;
+      taskGeneratorFunc(prevTasks[i],debugLevel);
 
-      prevTasks[i]->solver().settings()->setVerbosity(debugLevel);
-      prevTasks[i]->solver().settings()->setMaxIteraction(4000);
-      prevTasks[i]->solver().settings()->setAbsoluteTolerance(1e-4);// 1e-5の方がいいかも．1e-4の方がやや速いが，やや不正確
-      prevTasks[i]->solver().settings()->setRelativeTolerance(1e-4);// 1e-5の方がいいかも．1e-4の方がやや速いが，やや不正確
-      prevTasks[i]->solver().settings()->setScaledTerimination(true);// avoid too severe termination check
+      prevTasks[i]->toSolve() = true;
 
       int num_eqs = 0;
       int num_ineqs = 0;
@@ -102,8 +97,8 @@ namespace prioritized_inverse_kinematics_solver {
 
     // solve
     cnoid::VectorX result;
-    if(!prioritized_qp::solve(prevTasks, result, debugLevel)){
-      std::cerr <<"[PrioritizedIK] prioritized_qp::solve failed" << std::endl;
+    if(!prioritized_qp_base::solve(prevTasks, result, debugLevel)){
+      std::cerr <<"[PrioritizedIK] prioritized_qp_base::solve failed" << std::endl;
       return;
     }
 
@@ -123,8 +118,10 @@ namespace prioritized_inverse_kinematics_solver {
         // update rootlink pos rot
         variables[i]->p() += result.segment<3>(idx);
         if(result.segment<3>(idx+3).norm() != 0){
-          const cnoid::Matrix3 dR = cnoid::Matrix3(cnoid::AngleAxis(result.segment<3>(idx+3).norm(), cnoid::Vector3(result.segment<3>(idx+3).normalized())));
-          variables[i]->R() = (dR * variables[i]->R()).eval();
+          variables[i]->R() = cnoid::Matrix3(cnoid::AngleAxis(result.segment<3>(idx+3).norm(), cnoid::Vector3(result.segment<3>(idx+3).normalized())) * cnoid::AngleAxis(variables[i]->R()));
+          // 単純に3x3行列の空間でRを操作していると、だんだん数値誤差によってユニタリ行列でなくなってしまう
+          //const cnoid::Matrix3 dR = cnoid::Matrix3(cnoid::AngleAxis(result.segment<3>(idx+3).norm(), cnoid::Vector3(result.segment<3>(idx+3).normalized())));
+          //variables[i]->R() = (dR * variables[i]->R()).eval();
         }
         if (!variables[i]->R().isUnitary()) {
           std::cerr <<"[PrioritizedIK] WARN robot->rootLink()->R is not Unitary, something wrong !" << std::endl;
@@ -152,11 +149,12 @@ namespace prioritized_inverse_kinematics_solver {
 
   int solveIKLoop (const std::vector<cnoid::LinkPtr>& variables,
                    const std::vector<std::vector<std::shared_ptr<IK::IKConstraint> > >& ikc_list,
-                   std::vector<std::shared_ptr<prioritized_qp::Task> >& prevTasks,
+                   std::vector<std::shared_ptr<prioritized_qp_base::Task> >& prevTasks,
                    size_t max_iteration,
                    double wn,
                    int debugLevel,
-                   double dt) {
+                   double dt,
+                   std::function<void(std::shared_ptr<prioritized_qp_base::Task>&,int)> taskGeneratorFunc) {
     std::set<cnoid::BodyPtr> bodies;
     for(size_t i=0;i<variables.size();i++){
       if(variables[i]->body()) bodies.insert(variables[i]->body());
@@ -189,7 +187,7 @@ namespace prioritized_inverse_kinematics_solver {
       }
 
       if (checkIKConvergence(ikc_list)) return loop;
-      solveIKOnce(variables, ikc_list, prevTasks, wn, debugLevel);
+      solveIKOnce(variables, ikc_list, prevTasks, taskGeneratorFunc, wn, debugLevel);
       ++loop;
     }
 

@@ -1,4 +1,5 @@
 #include <prioritized_inverse_kinematics_solver/PrioritizedInverseKinematicsSolver.h>
+#include <prioritized_qp/PrioritizedQPSolver.h>
 #include <ik_constraint/PositionConstraint.h>
 #include <ik_constraint/COMConstraint.h>
 #include <ik_constraint/JointAngleConstraint.h>
@@ -87,7 +88,7 @@ int main(void){
   }
 
 
-  std::vector<std::shared_ptr<prioritized_qp::Task> > tasks;
+  std::vector<std::shared_ptr<prioritized_qp_base::Task> > tasks;
   std::vector<cnoid::LinkPtr> variables;
   variables.push_back(robot->rootLink());
   for(size_t i=0;i<robot->numJoints();i++){

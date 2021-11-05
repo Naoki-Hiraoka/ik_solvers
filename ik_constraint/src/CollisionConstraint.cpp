@@ -24,7 +24,7 @@ namespace IK{
       this->maxineq_[0] = 1e10;
       ret = true;
     }else{
-      this->minineq_[0] = (this->tolerance_ - distance) * this->weight_;
+      this->minineq_[0] = std::min((this->tolerance_ - distance) / this->velocityDamper_, this->maxError_) * this->weight_;
       this->maxineq_[0] = 1e10;
 
       ret =  distance - this->tolerance_ > - this->precision_;

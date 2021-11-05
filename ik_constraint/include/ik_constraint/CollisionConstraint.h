@@ -13,7 +13,8 @@ namespace IK{
     //  tolerance: この値以上離す[m]
     //  maxError: エラーの頭打ち
     //  precision: 収束判定の閾値
-    //  weight: コスト関数の重み. error * weight^2 * error.
+    //  weight: コスト関数の重み. error * weight^2 * error. maxErrorの適用後に適用する
+    //  velocityDamper: 不等式制約の差分をこの値分の1にする. maxErrorの適用前に適用する.
     //状態が更新される度に, 手動でcalcForwardKinematics()を呼ぶ必要が有る.
 
     const cnoid::LinkPtr& A_link() const { return A_link_;}
@@ -28,6 +29,8 @@ namespace IK{
     double& precision() { return precision_;}
     const double& weight() const { return weight_;}
     double& weight() { return weight_;}
+    const double& velocityDamper() const { return velocityDamper_;}
+    double& velocityDamper() { return velocityDamper_;}
 
     bool checkConvergence () override;
     const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobianineq (const std::vector<cnoid::LinkPtr>& joints) override;
@@ -45,6 +48,7 @@ namespace IK{
     double maxError_ = 0.1;
     double precision_ = 1e-4;
     double weight_ = 1.0;
+    double velocityDamper_ = 1.0;
 
     cnoid::Vector3 A_currentLocalp_ = cnoid::Vector3::Zero();
     cnoid::Vector3 B_currentLocalp_ = cnoid::Vector3::Zero();

@@ -11,7 +11,7 @@ namespace IK{
     //jointのqをq_upperとq_lowerの間にさせる.
     //  maxError: エラーの頭打ち
     //  precision: 収束判定の閾値
-    //  weight: コスト関数の重み. error * weight^2 * error.
+    //  weight: コスト関数の重み. error * weight^2 * error. maxErrorの適用後に適用する
 
     const cnoid::LinkPtr& joint() const { return joint_;}
     cnoid::LinkPtr& joint() { return joint_;}

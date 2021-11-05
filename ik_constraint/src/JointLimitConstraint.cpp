@@ -13,9 +13,9 @@ namespace IK{
     double upper = this->joint_->q_upper() - this->joint_->q();
 
     if(this->minineq_.rows() != 1) this->minineq_ = Eigen::VectorXd(1);
-    this->minineq_[0] = std::min(this->weight_ * lower, this->maxError_);
+    this->minineq_[0] = std::min(lower, this->maxError_) * this->weight_;
     if(this->maxineq_.rows() != 1) this->maxineq_ = Eigen::VectorXd(1);
-    this->maxineq_[0] = std::max(this->weight_ * upper, -this->maxError_);
+    this->maxineq_[0] = std::max(upper, -this->maxError_) * this->weight_;
 
     if(this->debuglevel_>=1){
       std::cerr << "JointLimitConstraint" << std::endl;

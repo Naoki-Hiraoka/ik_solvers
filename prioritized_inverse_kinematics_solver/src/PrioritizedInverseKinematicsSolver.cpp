@@ -42,7 +42,8 @@ namespace prioritized_inverse_kinematics_solver {
     for(size_t i=0;i<ikc_list.size();i++){
       taskGeneratorFunc(prevTasks[i],debugLevel);
 
-      prevTasks[i]->toSolve() = true;
+      if(i!=0) prevTasks[i]->toSolve() = true;
+      else prevTasks[i]->toSolve() = false;
 
       int num_eqs = 0;
       int num_ineqs = 0;

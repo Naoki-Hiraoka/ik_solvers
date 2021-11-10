@@ -9,7 +9,7 @@
 namespace prioritized_inverse_kinematics_solver {
   /*
     variables: 動かして良いjoint (free jointは6DOF扱い)
-    ikc_list: タスクたち. vectorの前の要素の方が高優先度.
+    ikc_list: タスクたち. vectorの前の要素の方が高優先度. 0番目の要素は必ず満たすと仮定しQPを解かない
     prevTasks: 前回のtasksを入れる. 自動的に更新される.
    */
   int solveIKLoop (const std::vector<cnoid::LinkPtr>& variables,

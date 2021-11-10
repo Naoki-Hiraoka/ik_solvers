@@ -10,18 +10,18 @@ namespace IK{
         double upper = (this->joint_->dq_upper() - this->joint_->dq()) * dt_;
 
         if(this->minineq_.rows() != 1) this->minineq_ = Eigen::VectorXd(1);
-        this->minineq_[0] = std::min(this->weight_ * lower, this->maxError_);
+        this->minineq_[0] = std::min(lower, this->maxError_) * this->weight_;
         if(this->maxineq_.rows() != 1) this->maxineq_ = Eigen::VectorXd(1);
-        this->maxineq_[0] = std::max(this->weight_ * upper, -this->maxError_);
+        this->maxineq_[0] = std::max(upper, -this->maxError_) * this->weight_;
 
         if(this->debuglevel_>=1){
           std::cerr << "JointVelocityConstraint" << std::endl;
           std::cerr << "dq" << std::endl;
           std::cerr << this->joint_->dq() << std::endl;
-          std::cerr << "q_upper" << std::endl;
-          std::cerr << this->joint_->q_upper() << std::endl;
-          std::cerr << "q_lower" << std::endl;
-          std::cerr << this->joint_->q_lower() << std::endl;
+          std::cerr << "dq_upper" << std::endl;
+          std::cerr << this->joint_->dq_upper() << std::endl;
+          std::cerr << "dq_lower" << std::endl;
+          std::cerr << this->joint_->dq_lower() << std::endl;
         }
 
         return lower<this->precision_ && upper>-this->precision_;
@@ -33,9 +33,9 @@ namespace IK{
         upper.tail<3>() = (cnoid::Vector3::Ones() * this->joint_->dq_upper() - this->joint_->w()) * dt_;
 
         if(this->minineq_.rows() != 6) this->minineq_ = Eigen::VectorXd(6);
-        for(size_t i=0;i<6;i++) this->minineq_[i] = std::min(this->weight_ * lower[i], this->maxError_);
+        for(size_t i=0;i<6;i++) this->minineq_[i] = std::min(lower[i], this->maxError_) * this->weight_;
         if(this->maxineq_.rows() != 6) this->maxineq_ = Eigen::VectorXd(6);
-        for(size_t i=0;i<6;i++) this->maxineq_[i] = std::max(this->weight_ * upper[i], -this->maxError_);
+        for(size_t i=0;i<6;i++) this->maxineq_[i] = std::max(upper[i], -this->maxError_) * this->weight_;
 
         if(this->debuglevel_>=1){
           std::cerr << "JointVelocityConstraint" << std::endl;
@@ -43,10 +43,10 @@ namespace IK{
           std::cerr << this->joint_->v() << std::endl;
           std::cerr << "w" << std::endl;
           std::cerr << this->joint_->w() << std::endl;
-          std::cerr << "q_upper" << std::endl;
-          std::cerr << this->joint_->q_upper() << std::endl;
-          std::cerr << "q_lower" << std::endl;
-          std::cerr << this->joint_->q_lower() << std::endl;
+          std::cerr << "dq_upper" << std::endl;
+          std::cerr << this->joint_->dq_upper() << std::endl;
+          std::cerr << "dq_lower" << std::endl;
+          std::cerr << this->joint_->dq_lower() << std::endl;
         }
 
         return (lower.array()<this->precision_).count()==6 && (upper.array()>-this->precision_).count()==6;

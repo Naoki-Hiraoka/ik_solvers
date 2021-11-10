@@ -123,8 +123,10 @@ namespace fik {
     // update rootlink pos rot
     robot->rootLink()->p() += dq_all.head<3>();
     if(dq_all.head<6>().tail<3>().norm() != 0){
-      const cnoid::Matrix3 dR = cnoid::Matrix3(cnoid::AngleAxis(dq_all.head<6>().tail<3>().norm(), cnoid::Vector3(dq_all.head<6>().tail<3>().normalized())));
-      robot->rootLink()->R() = (dR * robot->rootLink()->R()).eval();
+      const cnoid::AngleAxis dR = cnoid::AngleAxis(dq_all.head<6>().tail<3>().norm(), cnoid::Vector3(dq_all.head<6>().tail<3>().normalized()));
+      robot->rootLink()->R() = cnoid::Matrix3(dR * cnoid::AngleAxis(robot->rootLink()->R()));
+      // 単純に3x3行列の空間でRを操作していると、だんだん数値誤差によってユニタリ行列でなくなってしまう
+      // robot->rootLink()->R() = (dR * robot->rootLink()->R()).eval();
     }
     if (!robot->rootLink()->R().isUnitary()) {
       std::cerr <<"[FullbodyIK] WARN robot->rootLink()->R is not Unitary, something wrong !" << std::endl;

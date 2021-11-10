@@ -7,10 +7,11 @@
 #include <iostream>
 
 namespace IK{
-  class COMVelocityConstraint : public IKConstraint
+  class AngularMomentumConstraint : public IKConstraint
   {
   public:
-    //robotの重心をworld座標系のtargetPosに位置させる.
+    //robotの重心周りの角運動量をworld座標系のmaxVel, minVel[kg m^2/s]の範囲内に位置させる.
+    //  内部の処理では角運動量を重心周りのイナーシャで割って、[rad/s]の次元で扱う
     //  dt: [s]
     //  maxError: エラーの頭打ち[rad]
     //  precision: 収束判定の閾値[rad]
@@ -21,10 +22,10 @@ namespace IK{
     const cnoid::Matrix3d& eval_R() const { return eval_R_;}
     cnoid::Matrix3d& eval_R() { return eval_R_;}
 
-    const cnoid::Vector3& maxVel() const { return maxVel_;}
-    cnoid::Vector3& maxVel() { return maxVel_;}
-    const cnoid::Vector3& minVel() const { return minVel_;}
-    cnoid::Vector3& minVel() { return minVel_;}
+    const cnoid::Vector3& maxAngularMomentum() const { return maxAngularMomentum_;}
+    cnoid::Vector3& maxAngularMomentum() { return maxAngularMomentum_;}
+    const cnoid::Vector3& minAngularMomentum() const { return minAngularMomentum_;}
+    cnoid::Vector3& minAngularMomentum() { return minAngularMomentum_;}
     const double& dt() const { return dt_;}
     double& dt() { return dt_;}
 
@@ -45,8 +46,8 @@ namespace IK{
     cnoid::BodyPtr robot_ = nullptr;
     cnoid::Matrix3d eval_R_ = cnoid::Matrix3d::Identity();
 
-    cnoid::Vector3 maxVel_ = 1.0 * cnoid::Vector3::Ones();
-    cnoid::Vector3 minVel_ = -1.0 * cnoid::Vector3::Ones();
+    cnoid::Vector3 maxAngularMomentum_ = 1.0 * cnoid::Vector3::Ones();
+    cnoid::Vector3 minAngularMomentum_ = -1.0 * cnoid::Vector3::Ones();
     double dt_;
 
     cnoid::Vector3 maxError_ = 0.1 * cnoid::Vector3::Ones();
@@ -55,6 +56,19 @@ namespace IK{
 
     cnoid::BodyPtr jacobianineq_robot_ = nullptr;// 前回のjacobian計算時のrobot
     Eigen::SparseMatrix<double,Eigen::RowMajor> jacobianineq_full_;
+
+    static void calcAngularMomentumJacobianShape(const std::vector<cnoid::LinkPtr>& joints,//input
+                                                 const cnoid::BodyPtr& A_robot,//input
+                                                 const cnoid::BodyPtr& B_robot,//input
+                                                 Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian,//output
+                                                 std::unordered_map<cnoid::LinkPtr,int>& jacobianColMap //output
+                                                 );
+    static void calcAngularMomentumJacobianCoef(const std::vector<cnoid::LinkPtr>& joints,//input
+                                                const cnoid::BodyPtr& A_robot,//input
+                                                const cnoid::BodyPtr& B_robot,//input
+                                                std::unordered_map<cnoid::LinkPtr,int>& jacobianColMap, //input
+                                                Eigen::SparseMatrix<double,Eigen::RowMajor>& jacobian//output
+                                                );
   };
 }
 

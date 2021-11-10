@@ -16,9 +16,9 @@ namespace IK{
       cnoid::Vector3 lower = (this->minVel_ - dCM) * this->dt_;
 
       if(this->minineq_.rows() != 3) this->minineq_ = Eigen::VectorXd(3);
-      for(int i=0;i<3;i++) this->minineq_[i] = std::min(this->weight_[i] * lower[i], this->maxError_[i]);
+      for(int i=0;i<3;i++) this->minineq_[i] = std::min(lower[i], this->maxError_[i]) * this->weight_[i];
       if(this->maxineq_.rows() != 3) this->maxineq_ = Eigen::VectorXd(3);
-      for(int i=0;i<3;i++) this->maxineq_[i] = std::max(this->weight_[i] * upper[i], -this->maxError_[i]);
+      for(int i=0;i<3;i++) this->maxineq_[i] = std::max(upper[i], -this->maxError_[i]) * this->weight_[i];
 
       bool converged = true;
       for(size_t i=0; i<3; i++){
@@ -70,6 +70,7 @@ namespace IK{
     for(int i=0;i<3;i++) for(int j=0;j<3;j++) eval_R.insert(i,j) = this->eval_R_(i,j);
 
     this->jacobianineq_ = eval_R.transpose() * this->jacobianineq_full_;
+    for(size_t i=0;i<3;i++) this->jacobianineq_.row(i) *= this->weight_[i];
 
     if(this->debuglevel_>=1){
       std::cerr << "COMVelocityConstraint" << std::endl;

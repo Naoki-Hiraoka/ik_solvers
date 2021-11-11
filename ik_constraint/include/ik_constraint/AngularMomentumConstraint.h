@@ -1,5 +1,5 @@
-#ifndef COMVELOCITYCONSTRAINT_H
-#define COMVELOCITYCONSTRAINT_H
+#ifndef ANGULARMOMENTUMCONSTRAINT_H
+#define ANGULARMOMENTUMCONSTRAINT_H
 
 #include <ik_constraint/IKConstraint.h>
 #include <cnoid/EigenUtil>

@@ -144,9 +144,13 @@ namespace IK{
       cnoid::Vector3 upper = (this->maxAngularMomentum_ - dAM) * this->dt_; //eval_R系  [kg m^2]
       cnoid::Vector3 lower = (this->minAngularMomentum_ - dAM) * this->dt_; //eval_R系  [kg m^2]
 
-      cnoid::Matrix3 I = AMJ.block<3,3>(this->robot_->numJoints()+3,0); //world系
+      cnoid::Matrix3 I = AMJ.block<3,3>(0,this->robot_->numJoints()+3); //world系
       cnoid::Matrix3 I_evalR = this->eval_R_.transpose() * I * this->eval_R_;
-      cnoid::Matrix3 I_evalR_inv = I_evalR.inverse();
+      cnoid::Matrix3 I_evalR_inv;
+      I_evalR_inv <<
+        1.0/I_evalR(0,0), 0.0, 0.0,
+        0.0, 1.0/I_evalR(1,1), 0.0,
+        0.0, 0.0, 1.0/I_evalR(2,2);
       cnoid::Vector3 upper_scaled = I_evalR_inv * upper; //eval_R系  [rad]
       cnoid::Vector3 lower_scaled = I_evalR_inv * lower; //eval_R系  [rad]
 
@@ -167,6 +171,8 @@ namespace IK{
         std::cerr << "AngularMomentumConstraint" << std::endl;
         std::cerr << "dAM" << std::endl;
         std::cerr << dAM << std::endl;
+        std::cerr << "I_evalR" << std::endl;
+        std::cerr << I_evalR << std::endl;
         std::cerr << "upper" << std::endl;
         std::cerr << upper << std::endl;
         std::cerr << "lower" << std::endl;
@@ -205,10 +211,16 @@ namespace IK{
                                                                this->jacobianineqColMap_,
                                                                this->jacobianineq_full_);
 
+    Eigen::MatrixXd AMJ;
+    cnoid18::calcAngularMomentumJacobian(this->robot_,nullptr,AMJ); // [joint root]の順. comまわり
+    cnoid::Matrix3 I = AMJ.block<3,3>(0,this->robot_->numJoints()+3); //world系
+    Eigen::SparseMatrix<double,Eigen::RowMajor> I_inv(3,3);
+    for(int i=0;i<3;i++) I_inv.insert(i,i) = 1.0/I(i,i);
+
     Eigen::SparseMatrix<double,Eigen::RowMajor> eval_R(3,3);
     for(int i=0;i<3;i++) for(int j=0;j<3;j++) eval_R.insert(i,j) = this->eval_R_(i,j);
 
-    this->jacobianineq_ = eval_R.transpose() * this->jacobianineq_full_;
+    this->jacobianineq_ = eval_R.transpose() * I_inv * this->jacobianineq_full_;
     for(size_t i=0;i<3;i++) this->jacobianineq_.row(i) *= this->weight_[i];
 
     if(this->debuglevel_>=1){

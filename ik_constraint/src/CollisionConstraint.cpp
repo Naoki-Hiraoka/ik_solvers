@@ -81,7 +81,7 @@ namespace IK{
     this->jacobianineq_ = dir.transpose() * this->jacobianineq_full_.topRows<3>() * this->weight_;
 
     if(this->debuglevel_>=1){
-      std::cerr << "CollisionConstraint " << this->A_link_->name() << " - " << this->B_link_->name() << std::endl;
+      std::cerr << "CollisionConstraint " << (this->A_link_ ? this->A_link_->name() : "world") << " - " << (this->B_link_ ? this->B_link_->name() : "world") << std::endl;
       std::cerr << "direction" << std::endl;
       std::cerr << dir << std::endl;
       std::cerr << "jacobianineq" << std::endl;

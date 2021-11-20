@@ -10,6 +10,10 @@ namespace IK{
   class COMConstraint : public IKConstraint
   {
   public:
+    COMConstraint()
+      :
+      C_(Eigen::SparseMatrix<double,Eigen::RowMajor>(0,3)) // 下の定義の箇所で初期化するとUbuntu16でエラーになった
+    {}
     //robotの重心をworld座標系のtargetPosに位置させる.
     //  maxError: エラーの頭打ち
     //  precision: 収束判定の閾値
@@ -65,7 +69,7 @@ namespace IK{
     cnoid::Vector3 precision_ = 1e-4 * cnoid::Vector3::Ones();
     cnoid::Vector3 weight_ = cnoid::Vector3::Ones();
 
-    Eigen::SparseMatrix<double,Eigen::RowMajor> C_ = Eigen::SparseMatrix<double,Eigen::RowMajor>(0,3);
+    Eigen::SparseMatrix<double,Eigen::RowMajor> C_;
     cnoid::VectorX dl_;
     cnoid::VectorX du_;
     cnoid::VectorX maxCError_;

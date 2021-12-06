@@ -42,10 +42,12 @@ namespace IK {
       }
 
       if(calcIw){
-        sub.Iw = R * link->I() * R.transpose() + link->m() * D( link->wc() - sub.mwc/sub.m );
+        if(sub.m != 0.0) sub.Iw = R * link->I() * R.transpose() + link->m() * D( link->wc() - sub.mwc/sub.m );
+        else sub.Iw = R * link->I() * R.transpose();
         for(cnoid::Link* child = link->child(); child; child = child->sibling()){
           SubMass& childSub = subMasses[child->index()];
-          sub.Iw += childSub.Iw + childSub.m * D( childSub.mwc/childSub.m - sub.mwc/sub.m );
+          if(sub.m != 0.0 && childSub.m != 0.0) sub.Iw += childSub.Iw + childSub.m * D( childSub.mwc/childSub.m - sub.mwc/sub.m );
+          else sub.Iw += childSub.Iw;
         }
       }
     }
@@ -106,7 +108,9 @@ namespace IK {
           const cnoid::Vector3 omega = sgn[joint->jointId()] * joint->R() * joint->a();
           const SubMass& sub = subMasses[joint->index()];
           const cnoid::Vector3 Mcol = M.col(joint->jointId());
-          const cnoid::Vector3 dp = (sub.mwc/sub.m).cross(Mcol) + sub.Iw * omega;
+          cnoid::Vector3 dp;
+          if(sub.m != 0.0) dp = (sub.mwc/sub.m).cross(Mcol) + sub.Iw * omega;
+          else dp = sub.Iw * omega;
           H.col(joint->jointId()) = dp;
         } else {
           std::cerr << "calcAngularMomentumJacobian() : unsupported jointType("

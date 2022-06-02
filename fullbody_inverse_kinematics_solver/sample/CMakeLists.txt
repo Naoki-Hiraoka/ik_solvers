@@ -17,6 +17,9 @@ include_directories(
 set(CHOREONOID_BODY_LIBRARIES_ABS)
 foreach(lib ${CHOREONOID_BODY_LIBRARIES})
   find_library(${lib}_abs NAMES ${lib} PATHS ${CHOREONOID_LIBRARY_DIRS})
+  if (NOT (${lib}_abs))
+    set(${lib}_abs ${lib})
+  endif()
   set(CHOREONOID_BODY_LIBRARIES_ABS ${CHOREONOID_BODY_LIBRARIES_ABS} ${${lib}_abs})
 endforeach(lib)
 

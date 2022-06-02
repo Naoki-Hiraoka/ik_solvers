@@ -19,6 +19,7 @@ namespace IK{
     //  precision: 収束判定の閾値
     //  weight: コスト関数の重み. error * weight^2 * error. 0の成分はjacobianやerrorに含まれない
     //状態が更新される度に, 手動でcalcForwardKinematics()とcalcCenterOfMass()を呼ぶ必要が有る.
+#if 0
     const cnoid::BodyPtr& A_robot() const { return A_robot_;}
     cnoid::BodyPtr& A_robot() { return A_robot_;}
     const cnoid::Vector3& A_localp() const { return A_localp_;}
@@ -29,7 +30,18 @@ namespace IK{
     cnoid::Vector3& B_localp() { return B_localp_;}
     const cnoid::Matrix3d& eval_R() const { return eval_R_;}
     cnoid::Matrix3d& eval_R() { return eval_R_;}
+#else
+#define define_setter_getter(type,nm)                           \
+    void set_ ## nm (const type &in_arg) { nm ## _ = in_arg; }  \
+    const type  & nm () const { return nm ## _; }               \
+    type  & nm () { return nm ## _; }
 
+    define_setter_getter(cnoid::BodyPtr,A_robot);
+    define_setter_getter(cnoid::Vector3,A_localp);
+    define_setter_getter(cnoid::BodyPtr,B_robot);
+    define_setter_getter(cnoid::Vector3,B_localp);
+    define_setter_getter(cnoid::Matrix3d,eval_R);
+#endif
     // for equality
     const cnoid::Vector3& maxError() const { return maxError_;}
     cnoid::Vector3& maxError() { return maxError_;}

@@ -18,6 +18,7 @@ namespace IK{
     //  precision: 収束判定の閾値 eval系
     //  weight: コスト関数の重み. error * weight^2 * error. 0の成分はjacobianやerrorに含まれない. eval系
     //状態が更新される度に, 手動でcalcForwardKinematics()を呼ぶ必要が有る.
+#if 0
     const cnoid::LinkPtr& A_link() const { return A_link_;}
     cnoid::LinkPtr& A_link() { return A_link_;}
     const cnoid::Position& A_localpos() const { return A_localpos_;}
@@ -36,7 +37,22 @@ namespace IK{
     cnoid::LinkPtr& eval_link() { return eval_link_;}
     const cnoid::Matrix3d& eval_localR() const { return eval_localR_;}
     cnoid::Matrix3d& eval_localR() { return eval_localR_;}
+#else
+#define define_setter_getter(type,nm)                           \
+    void set_ ## nm (const type &in_arg) { nm ## _ = in_arg; }  \
+    const type  & nm () const { return nm ## _; }               \
+    type  & nm () { return nm ## _; }
 
+    define_setter_getter(cnoid::LinkPtr,A_link);
+    define_setter_getter(cnoid::Position,A_localpos);
+    define_setter_getter(cnoid::LinkPtr,B_link);
+    define_setter_getter(cnoid::Position,B_localpos);
+    define_setter_getter(cnoid::Vector6,maxError);
+    define_setter_getter(cnoid::Vector6,precision);
+    define_setter_getter(cnoid::Vector6,weight);
+    define_setter_getter(cnoid::LinkPtr,eval_link);
+    define_setter_getter(cnoid::Matrix3d,eval_localR);
+#endif
     // 収束判定
     bool checkConvergence () override;
 

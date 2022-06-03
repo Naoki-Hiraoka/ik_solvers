@@ -24,6 +24,7 @@ using namespace cnoid;
 namespace py = pybind11;
 
 //IKConstraint
+//AngularMomentum
 //COM
 //COMVelocity
 //ClientCollision
@@ -32,40 +33,30 @@ namespace py = pybind11;
 //JointVelocity
 //Position
 
+typedef std::shared_ptr<IK::IKConstraint >              IKConstraintPtr;
+typedef std::shared_ptr<IK::AngularMomentumConstraint > AngularMomentumConstraintPtr;
+typedef std::shared_ptr<IK::COMConstraint >             COMConstraintPtr;
+typedef std::shared_ptr<IK::COMVelocityConstraint >     COMVelocityConstraintPtr;
+typedef std::shared_ptr<IK::ClientCollisionConstraint > ClientCollisionConstraintPtr;
+typedef std::shared_ptr<IK::JointAngleConstraint >      JointAngleConstraintPtr;
+typedef std::shared_ptr<IK::JointLimitConstraint >      JointLimitConstraintPtr;
+typedef std::shared_ptr<IK::JointVelocityConstraint >   JointVelocityConstraintPtr;
+typedef std::shared_ptr<IK::PositionConstraint >        PositionConstraintPtr;
+
 class Constraints
 {
 public:
-  std::vector< std::shared_ptr <IK::IKConstraint > > ikc_list;
+  std::vector< IKConstraintPtr > ikc_list;
 
 public:
   Constraints() { };
 
 public:
-  void push_back(std::shared_ptr <IK::IKConstraint > &ptr) {
-    ikc_list.push_back(ptr);
-  }
-  void push_back(std::shared_ptr <IK::COMConstraint > &ptr) {
-    ikc_list.push_back(ptr);
-  }
-  void push_back(std::shared_ptr <IK::COMVelocityConstraint > &ptr) {
-    ikc_list.push_back(ptr);
-  }
-  void push_back(std::shared_ptr <IK::ClientCollisionConstraint > &ptr) {
-    ikc_list.push_back(ptr);
-  }
-  void push_back(std::shared_ptr <IK::JointAngleConstraint > &ptr) {
-    ikc_list.push_back(ptr);
-  }
-  void push_back(std::shared_ptr <IK::JointLimitConstraint > &ptr) {
-    ikc_list.push_back(ptr);
-  }
-  void push_back(std::shared_ptr <IK::JointVelocityConstraint > &ptr) {
-    ikc_list.push_back(ptr);
-  }
-  void push_back(std::shared_ptr <IK::PositionConstraint > &ptr) {
+  void push_back(IKConstraintPtr &ptr) {
     ikc_list.push_back(ptr);
   }
   size_t size() { return ikc_list.size(); }
+  IKConstraintPtr &at(int i) { return ikc_list.at(i); }
 };
 
 int solveFullbodyIKLoopFast (const cnoid::BodyPtr& robot,
@@ -89,7 +80,6 @@ int solveFullbodyIKLoopFast (const cnoid::BodyPtr& robot,
                                       debugLevel);
 }
 
-#if 0
 class pyIKConstraint : public IK::IKConstraint
 {
 public:
@@ -104,7 +94,7 @@ public:
     );
   }
 };
-#endif
+
 
 PYBIND11_MODULE(FullbodyIK, m)
 {
@@ -112,33 +102,26 @@ PYBIND11_MODULE(FullbodyIK, m)
 
     py::module::import("cnoid.Util");
 
-#if 0
-    py::class_< IK::IKConstraint, pyIKConstraint > (m, "IKConstraint")
-      .def(py::init<>())
-      .def("checkConvergence", &IK::IKConstraint::checkConvergence);
-#endif
-
     py::class_< Constraints > (m, "Constraints")
       .def(py::init<>())
       .def("size", &Constraints::size)
+      .def("at", &Constraints::at)
       .def("__iter__", [](const Constraints &s) { return py::make_iterator(s.ikc_list.begin(), s.ikc_list.end()); },
            py::keep_alive<0, 1>())
-      .def("push_back", (void (Constraints::*)(std::shared_ptr< IK::COMConstraint> &)) &Constraints::push_back)
-      .def("push_back", (void (Constraints::*)(std::shared_ptr< IK::COMVelocityConstraint> &)) &Constraints::push_back)
-      .def("push_back", (void (Constraints::*)(std::shared_ptr< IK::ClientCollisionConstraint> &)) &Constraints::push_back)
-      .def("push_back", (void (Constraints::*)(std::shared_ptr< IK::JointAngleConstraint> &)) &Constraints::push_back)
-      .def("push_back", (void (Constraints::*)(std::shared_ptr< IK::JointLimitConstraint> &)) &Constraints::push_back)
-      .def("push_back", (void (Constraints::*)(std::shared_ptr< IK::JointVelocityConstraint> &)) &Constraints::push_back)
-      .def("push_back", (void (Constraints::*)(std::shared_ptr< IK::PositionConstraint> &)) &Constraints::push_back)
+      .def("push_back", (void (Constraints::*)(IKConstraintPtr &)) &Constraints::push_back)
       ;
 
-    py::class_<IK::AngularMomentumConstraint, std::shared_ptr< IK::AngularMomentumConstraint> > (m, "AngularMomentumConstraint")
+    py::class_< IK::IKConstraint, IKConstraintPtr, pyIKConstraint > (m, "IKConstraint")
+      .def(py::init<>())
+      .def_property("debuglevel", (int & (IK::IKConstraint::*)())&IK::IKConstraint::debuglevel, &IK::IKConstraint::set_debuglevel)
+      .def("checkConvergence", &IK::IKConstraint::checkConvergence)
+      ;
+
+    py::class_<IK::AngularMomentumConstraint, AngularMomentumConstraintPtr, IK::IKConstraint > (m, "AngularMomentumConstraint")
       .def(py::init<>());
 
-    py::class_<IK::COMConstraint, std::shared_ptr< IK::COMConstraint> > (m, "COMConstraint")
+    py::class_<IK::COMConstraint, COMConstraintPtr, IK::IKConstraint > (m, "COMConstraint")
       .def(py::init<>())
-      .def("checkConvergence", &IK::COMConstraint::checkConvergence)
-      .def_property("debuglevel", (int & (IK::IKConstraint::*)())&IK::IKConstraint::debuglevel, &IK::IKConstraint::set_debuglevel)
       .def_property("A_robot",
                     (cnoid::BodyPtr & (IK::COMConstraint::*)()) &IK::COMConstraint::A_robot,
                     &IK::COMConstraint::set_A_robot)
@@ -156,23 +139,16 @@ PYBIND11_MODULE(FullbodyIK, m)
                     &IK::COMConstraint::set_eval_R)
       ;
 
-    py::class_<IK::COMVelocityConstraint, std::shared_ptr< IK::COMVelocityConstraint> > (m, "COMVelocityConstraint")
-      .def(py::init<>())
-      .def_property("debuglevel", (int & (IK::IKConstraint::*)())&IK::IKConstraint::debuglevel, &IK::IKConstraint::set_debuglevel)
-      .def("checkConvergence", &IK::COMVelocityConstraint::checkConvergence)
-      ;
+    py::class_<IK::COMVelocityConstraint, COMVelocityConstraintPtr, IK::IKConstraint > (m, "COMVelocityConstraint")
+      .def(py::init<>());
 
-    py::class_<IK::ClientCollisionConstraint, std::shared_ptr< IK::ClientCollisionConstraint> > (m, "ClientCollisionConstraint")
-      .def(py::init<>())
-      .def_property("debuglevel", (int & (IK::IKConstraint::*)())&IK::IKConstraint::debuglevel, &IK::IKConstraint::set_debuglevel)
-      .def("checkConvergence", &IK::ClientCollisionConstraint::checkConvergence)
-      ;
-    //py::class_<IK::CollisionConstraint, std::shared_ptr< IK::CollisionConstraint> > (m, "CollisionConstraint")
+    py::class_<IK::ClientCollisionConstraint, ClientCollisionConstraintPtr, IK::IKConstraint > (m, "ClientCollisionConstraint")
+      .def(py::init<>());
+
+    //py::class_<IK::CollisionConstraint, CollisionConstraintPtr > (m, "CollisionConstraint")
     //  .def(py::init<>());
-    py::class_<IK::JointAngleConstraint, std::shared_ptr< IK::JointAngleConstraint> > (m, "JointAngleConstraint")
+    py::class_<IK::JointAngleConstraint, JointAngleConstraintPtr, IK::IKConstraint > (m, "JointAngleConstraint")
       .def(py::init<>())
-      .def_property("debuglevel", (int & (IK::IKConstraint::*)())&IK::IKConstraint::debuglevel, &IK::IKConstraint::set_debuglevel)
-      .def("checkConvergence", &IK::JointAngleConstraint::checkConvergence)
       .def_property("joint",
                     (cnoid::LinkPtr & (IK::JointAngleConstraint::*)()) &IK::JointAngleConstraint::joint,
                     &IK::JointAngleConstraint::set_joint)
@@ -190,21 +166,14 @@ PYBIND11_MODULE(FullbodyIK, m)
                     &IK::JointAngleConstraint::set_weight)
       ;
 
-    py::class_<IK::JointLimitConstraint, std::shared_ptr< IK::JointLimitConstraint> > (m, "JointLimitConstraint")
-      .def(py::init<>())
-      .def("checkConvergence", &IK::JointLimitConstraint::checkConvergence)
-      .def_property("debuglevel", (int & (IK::IKConstraint::*)())&IK::IKConstraint::debuglevel, &IK::IKConstraint::set_debuglevel)
-      ;
-    py::class_<IK::JointVelocityConstraint, std::shared_ptr< IK::JointVelocityConstraint> > (m, "JointVelocityConstraint")
-      .def("checkConvergence", &IK::JointVelocityConstraint::checkConvergence)
-      .def_property("debuglevel", (int & (IK::IKConstraint::*)())&IK::IKConstraint::debuglevel, &IK::IKConstraint::set_debuglevel)
-      .def(py::init<>())
-      ;
+    py::class_<IK::JointLimitConstraint, JointLimitConstraintPtr, IK::IKConstraint > (m, "JointLimitConstraint")
+      .def(py::init<>());
 
-    py::class_<IK::PositionConstraint, std::shared_ptr< IK::PositionConstraint> > (m, "PositionConstraint")
+    py::class_<IK::JointVelocityConstraint, JointVelocityConstraintPtr, IK::IKConstraint > (m, "JointVelocityConstraint")
+      .def(py::init<>());
+
+    py::class_<IK::PositionConstraint, PositionConstraintPtr, IK::IKConstraint > (m, "PositionConstraint")
       .def(py::init<>())
-      .def("checkConvergence", &IK::PositionConstraint::checkConvergence)
-      .def_property("debuglevel", (int & (IK::IKConstraint::*)())&IK::IKConstraint::debuglevel, &IK::IKConstraint::set_debuglevel)
       .def_property("A_link",
                     (cnoid::LinkPtr & (IK::PositionConstraint::*)()) &IK::PositionConstraint::A_link,
                     &IK::PositionConstraint::set_A_link)
@@ -233,7 +202,6 @@ PYBIND11_MODULE(FullbodyIK, m)
                     (cnoid::Matrix3d & (IK::PositionConstraint::*)()) &IK::PositionConstraint::eval_localR,
                     &IK::PositionConstraint::set_eval_localR)
       ;
-
 
     m.def("solveFullbodyIKLoopFast", &solveFullbodyIKLoopFast,
           py::arg("robot"),

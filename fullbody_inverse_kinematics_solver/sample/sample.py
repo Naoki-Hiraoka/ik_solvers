@@ -30,7 +30,8 @@ constraint = FullbodyIK.PositionConstraint()
 constraint.A_link = robot.link('RARM_WRIST_R');
 constraint.A_localpos = cnoidPosition(translation=np.array([0.0, 0.0, -0.02]))
 #constraint.B_link() = nullptr;
-constraint.B_localpos = cnoidPosition(translation=np.array([0.3, -0.2, 0.8]))
+constraint.B_localpos = cnoidPosition(translation=np.array([0.3, -0.2, 0.8]), rotation=cnoid.Util.angleAxis(-1.5, np.array([0,1,0])))
+#cnoid.Util.AngleAxis(-1.5, np.array([0,1,0])).toRotationMatrix()
 ## constraint.B_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(-1.5,cnoid::Vector3(0,1,0)));
 constraints.push_back(constraint)
 
@@ -39,7 +40,7 @@ constraint = FullbodyIK.PositionConstraint()
 constraint.A_link = robot.link('LARM_WRIST_R')
 constraint.A_localpos = cnoidPosition(translation=np.array([0.0, 0.0,-0.02]))
 #constraint->B_link() = nullptr;
-constraint.B_localpos = cnoidPosition(translation=np.array([0.3, 0.2, 0.8]))
+constraint.B_localpos = cnoidPosition(translation=np.array([0.3, 0.2, 0.8]), rotation=cnoid.Util.angleAxis(-1.5, np.array([0,1,0])))
 #constraint->B_localpos().linear() = cnoid::Matrix3(cnoid::AngleAxis(-1.5,cnoid::Vector3(0,1,0)));
 weight = constraint.weight
 for idx in range(3):

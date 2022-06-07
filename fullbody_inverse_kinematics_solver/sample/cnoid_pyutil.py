@@ -86,5 +86,6 @@ def findRobot(name):
 
 def flushRobotView(name):
     findItem(name).notifyKinematicStateChange()
-    MessageView.getInstance().flush()
+    #MessageView.getInstance().flush()
+    MessageView.instance.flush()
 

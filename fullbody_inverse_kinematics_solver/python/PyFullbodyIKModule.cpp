@@ -43,6 +43,9 @@ typedef std::shared_ptr<IK::JointLimitConstraint >      JointLimitConstraintPtr;
 typedef std::shared_ptr<IK::JointVelocityConstraint >   JointVelocityConstraintPtr;
 typedef std::shared_ptr<IK::PositionConstraint >        PositionConstraintPtr;
 
+using Matrix4RM = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>;
+using Matrix3RM = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>;
+
 class Constraints
 {
 public:
@@ -137,6 +140,15 @@ PYBIND11_MODULE(FullbodyIK, m)
       .def_property("eval_R",
                     (cnoid::Matrix3d & (IK::COMConstraint::*)()) &IK::COMConstraint::eval_R,
                     &IK::COMConstraint::set_eval_R)
+      .def_property("maxError",
+                    (cnoid::Vector3 & (IK::COMConstraint::*)()) &IK::COMConstraint::maxError,
+                    &IK::COMConstraint::set_maxError)
+      .def_property("precision",
+                    (cnoid::Vector3 & (IK::COMConstraint::*)()) &IK::COMConstraint::precision,
+                    &IK::COMConstraint::set_precision)
+      .def_property("weight",
+                    (cnoid::Vector3 & (IK::COMConstraint::*)()) &IK::COMConstraint::weight,
+                    &IK::COMConstraint::set_weight)
       ;
 
     py::class_<IK::COMVelocityConstraint, COMVelocityConstraintPtr, IK::IKConstraint > (m, "COMVelocityConstraint")
@@ -184,11 +196,17 @@ PYBIND11_MODULE(FullbodyIK, m)
                     (cnoid::LinkPtr & (IK::PositionConstraint::*)()) &IK::PositionConstraint::eval_link,
                     &IK::PositionConstraint::set_eval_link)
       .def_property("A_localpos",
-                    (cnoid::Position & (IK::PositionConstraint::*)()) &IK::PositionConstraint::A_localpos,
-                    &IK::PositionConstraint::set_A_localpos)
+                    //(cnoid::Position & (IK::PositionConstraint::*)()) &IK::PositionConstraint::A_localpos,
+                    //&IK::PositionConstraint::set_A_localpos)
+                    [](IK::PositionConstraint& self) -> Isometry3::MatrixType& { return self.A_localpos().matrix(); },
+                    [](IK::PositionConstraint& self, Eigen::Ref<const Matrix4RM> in_pos) {
+                      Position p(in_pos); self.set_A_localpos(p); })
       .def_property("B_localpos",
-                    (cnoid::Position & (IK::PositionConstraint::*)()) &IK::PositionConstraint::B_localpos,
-                    &IK::PositionConstraint::set_B_localpos)
+                    //(cnoid::Position & (IK::PositionConstraint::*)()) &IK::PositionConstraint::B_localpos,
+                    //&IK::PositionConstraint::set_B_localpos)
+                    [](IK::PositionConstraint& self) -> Isometry3::MatrixType& { return self.B_localpos().matrix(); },
+                    [](IK::PositionConstraint& self, Eigen::Ref<const Matrix4RM> in_pos) {
+                      Position p(in_pos); self.set_B_localpos(p); })
       .def_property("maxError",
                     (cnoid::Vector6 & (IK::PositionConstraint::*)()) &IK::PositionConstraint::maxError,
                     &IK::PositionConstraint::set_maxError)

@@ -122,16 +122,16 @@ include_directories(
   ${CHOREONOID_INCLUDE_DIRS}
 )
 
-# 相対パスを絶対パスに直す
-set(CHOREONOID_BODY_LIBRARIES_ABS)
-foreach(lib ${CHOREONOID_BODY_LIBRARIES})
-  find_library(${lib}_abs NAMES ${lib} PATHS ${CHOREONOID_LIBRARY_DIRS})
-  if (NOT (${lib}_abs))
-    set(${lib}_abs ${lib})
-  endif()
-  set(CHOREONOID_BODY_LIBRARIES_ABS ${CHOREONOID_BODY_LIBRARIES_ABS} ${${lib}_abs})
-endforeach(lib)
-message ("cnoid_body_lib: ${CHOREONOID_BODY_LIBRARIES_ABS}")
+### 相対パスを絶対パスに直す
+##set(CHOREONOID_BODY_LIBRARIES_ABS)
+##foreach(lib ${CHOREONOID_BODY_LIBRARIES})
+##  find_library(${lib}_abs NAMES ${lib} PATHS ${CHOREONOID_LIBRARY_DIRS})
+##  if (NOT (${lib}_abs))
+##    set(${lib}_abs ${lib})
+##  endif()
+##  set(CHOREONOID_BODY_LIBRARIES_ABS ${CHOREONOID_BODY_LIBRARIES_ABS} ${${lib}_abs})
+##endforeach(lib)
+##message ("cnoid_body_lib: ${CHOREONOID_BODY_LIBRARIES_ABS}")
 
 add_library(${PROJECT_NAME}
   src/FullbodyInverseKinematicsSolverFast.cpp
@@ -139,19 +139,17 @@ add_library(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
-  ${CHOREONOID_BODY_LIBRARIES_ABS}
+  ${CHOREONOID_BODY_LIBRARIES}
   )
 
 #############
 ## Install ##
 #############
-
 install(TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
-
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
@@ -160,7 +158,6 @@ install(DIRECTORY include/${PROJECT_NAME}/
 #############
 ## Testing ##
 #############
-
 add_subdirectory(sample)
 add_subdirectory(python)
 

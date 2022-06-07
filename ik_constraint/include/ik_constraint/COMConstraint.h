@@ -41,7 +41,14 @@ namespace IK{
     define_setter_getter(cnoid::BodyPtr,B_robot);
     define_setter_getter(cnoid::Vector3,B_localp);
     define_setter_getter(cnoid::Matrix3d,eval_R);
+
+    // for equality
+    define_setter_getter(cnoid::Vector3,maxError);
+    define_setter_getter(cnoid::Vector3,precision);
+    define_setter_getter(cnoid::Vector3,weight);
 #endif
+
+#if 0
     // for equality
     const cnoid::Vector3& maxError() const { return maxError_;}
     cnoid::Vector3& maxError() { return maxError_;}
@@ -49,7 +56,7 @@ namespace IK{
     cnoid::Vector3& precision() { return precision_;}
     const cnoid::Vector3& weight() const { return weight_;}
     cnoid::Vector3& weight() { return weight_;}
-
+#endif
     // for inequality
     const Eigen::SparseMatrix<double,Eigen::RowMajor>& C() const { return C_;}
     Eigen::SparseMatrix<double,Eigen::RowMajor>& C() { return C_;}

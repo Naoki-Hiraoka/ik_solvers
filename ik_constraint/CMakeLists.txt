@@ -28,16 +28,16 @@ include_directories(
   ${CHOREONOID_INCLUDE_DIRS}
 )
 
-# 相対パスを絶対パスに直す
-set(CHOREONOID_BODY_LIBRARIES_ABS)
-foreach(lib ${CHOREONOID_BODY_LIBRARIES})
-  find_library(${lib}_abs NAMES ${lib} PATHS ${CHOREONOID_LIBRARY_DIRS})
-  if (NOT (${lib}_abs))
-    set(${lib}_abs ${lib})
-  endif()
-  set(CHOREONOID_BODY_LIBRARIES_ABS ${CHOREONOID_BODY_LIBRARIES_ABS} ${${lib}_abs})
-endforeach(lib)
-message ("cnoid_body_lib: ${CHOREONOID_BODY_LIBRARIES_ABS}")
+### 相対パスを絶対パスに直す
+##set(CHOREONOID_BODY_LIBRARIES_ABS)
+##foreach(lib ${CHOREONOID_BODY_LIBRARIES})
+##  find_library(${lib}_abs NAMES ${lib} PATHS ${CHOREONOID_LIBRARY_DIRS})
+##  if (NOT (${lib}_abs))
+##    set(${lib}_abs ${lib})
+##  endif()
+##  set(CHOREONOID_BODY_LIBRARIES_ABS ${CHOREONOID_BODY_LIBRARIES_ABS} ${${lib}_abs})
+##endforeach(lib)
+##message ("cnoid_body_lib: ${CHOREONOID_BODY_LIBRARIES_ABS}")
 
 add_library(${PROJECT_NAME}
   src/Jacobian.cpp
@@ -55,7 +55,7 @@ add_library(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
-  ${CHOREONOID_BODY_LIBRARIES_ABS}
+  ${CHOREONOID_BODY_LIBRARIES}
   )
 
 #############

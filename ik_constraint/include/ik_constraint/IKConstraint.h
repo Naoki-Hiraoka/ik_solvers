@@ -35,6 +35,7 @@ namespace IK{
 
     const int& debuglevel() const { return debuglevel_;}
     int& debuglevel() { return debuglevel_;}
+    void set_debuglevel (int &in) { debuglevel_ = in; }
 
     static size_t getJointDOF(const cnoid::LinkPtr& joint);
   protected:

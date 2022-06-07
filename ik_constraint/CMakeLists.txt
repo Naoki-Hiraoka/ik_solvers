@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.0.2)
+cmake_policy(SET CMP0003 NEW)
+cmake_policy(SET CMP0057 NEW)
+
 project(ik_constraint)
 
 add_compile_options(-std=c++11)
@@ -25,12 +28,16 @@ include_directories(
   ${CHOREONOID_INCLUDE_DIRS}
 )
 
-# 相対パスを絶対パスに直す
-set(CHOREONOID_BODY_LIBRARIES_ABS)
-foreach(lib ${CHOREONOID_BODY_LIBRARIES})
-  find_library(${lib}_abs NAMES ${lib} PATHS ${CHOREONOID_LIBRARY_DIRS})
-  set(CHOREONOID_BODY_LIBRARIES_ABS ${CHOREONOID_BODY_LIBRARIES_ABS} ${${lib}_abs})
-endforeach(lib)
+### 相対パスを絶対パスに直す
+##set(CHOREONOID_BODY_LIBRARIES_ABS)
+##foreach(lib ${CHOREONOID_BODY_LIBRARIES})
+##  find_library(${lib}_abs NAMES ${lib} PATHS ${CHOREONOID_LIBRARY_DIRS})
+##  if (NOT (${lib}_abs))
+##    set(${lib}_abs ${lib})
+##  endif()
+##  set(CHOREONOID_BODY_LIBRARIES_ABS ${CHOREONOID_BODY_LIBRARIES_ABS} ${${lib}_abs})
+##endforeach(lib)
+##message ("cnoid_body_lib: ${CHOREONOID_BODY_LIBRARIES_ABS}")
 
 add_library(${PROJECT_NAME}
   src/Jacobian.cpp
@@ -48,7 +55,7 @@ add_library(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
-  ${CHOREONOID_BODY_LIBRARIES_ABS}
+  ${CHOREONOID_BODY_LIBRARIES}
   )
 
 #############

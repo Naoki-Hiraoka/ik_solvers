@@ -12,7 +12,7 @@ namespace IK{
     //  maxError: エラーの頭打ち
     //  precision: 収束判定の閾値
     //  weight: コスト関数の重み. error * weight^2 * error.
-
+#if 0
     const cnoid::LinkPtr& joint() const { return joint_;}
     cnoid::LinkPtr& joint() { return joint_;}
     const double& targetq() const { return targetq_;}
@@ -23,7 +23,18 @@ namespace IK{
     double& precision() { return precision_;}
     const double& weight() const { return weight_;}
     double& weight() { return weight_;}
+#else
+#define define_setter_getter(type,nm)                           \
+    void set_ ## nm (const type &in_arg) { nm ## _ = in_arg; }  \
+    const type  & nm () const { return nm ## _; }               \
+    type  & nm () { return nm ## _; }
 
+    define_setter_getter(cnoid::LinkPtr,joint);
+    define_setter_getter(double,targetq);
+    define_setter_getter(double,maxError);
+    define_setter_getter(double,precision);
+    define_setter_getter(double,weight);
+#endif
     bool checkConvergence () override;
     const Eigen::VectorXd& calc_error () override;
     const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobian (const std::vector<cnoid::LinkPtr>& joints) override;

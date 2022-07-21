@@ -39,6 +39,7 @@ add_library(${PROJECT_NAME}
   src/COMConstraint.cpp
   src/COMVelocityConstraint.cpp
   src/AngularMomentumConstraint.cpp
+  src/AngularMomentumLimitConstraint.cpp
   src/JointAngleConstraint.cpp
   src/JointLimitConstraint.cpp
   src/JointVelocityConstraint.cpp

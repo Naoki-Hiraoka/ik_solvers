@@ -1,5 +1,5 @@
-#ifndef ANGULARMOMENTUMCONSTRAINT_H
-#define ANGULARMOMENTUMCONSTRAINT_H
+#ifndef ANGULARMOMENTUMLIMITCONSTRAINT_H
+#define ANGULARMOMENTUMLIMITCONSTRAINT_H
 
 #include <ik_constraint/IKConstraint.h>
 #include <cnoid/EigenUtil>
@@ -7,7 +7,7 @@
 #include <iostream>
 
 namespace IK{
-  class AngularMomentumConstraint : public IKConstraint
+  class AngularMomentumLimitConstraint : public IKConstraint
   {
   public:
     //robotの重心周りの角運動量をworld座標系のmaxVel, minVel[kg m^2/s]の範囲内に位置させる.
@@ -71,10 +71,6 @@ namespace IK{
                                                 );
   };
 
-  namespace cnoid18 {
-    // choreonoidのrelease1.7の calcAngularMomentumJacobianにはバグがあり、開発版ではhttps://github.com/s-nakaoka/choreonoid/pull/234 で修正されている. 修正された版の関数(https://github.com/choreonoid/choreonoid/blob/master/src/Body/Jacobian.cpp )を使う
-    void calcAngularMomentumJacobian(cnoid::Body* body, cnoid::Link* base, Eigen::MatrixXd& H);
-  }
 }
 
 #endif

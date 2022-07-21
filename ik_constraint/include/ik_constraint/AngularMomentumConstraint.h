@@ -10,22 +10,21 @@ namespace IK{
   class AngularMomentumConstraint : public IKConstraint
   {
   public:
-    //robotの重心周りの角運動量をworld座標系のmaxVel, minVel[kg m^2/s]の範囲内に位置させる.
+    //robotの重心周りの角運動量を目標の値[kg m^2/s]に一致させる
     //  内部の処理では角運動量を重心周りのイナーシャで割って、[rad/s]の次元で扱う
     //  dt: [s]
     //  maxError: エラーの頭打ち[rad]
     //  precision: 収束判定の閾値[rad]
     //  weight: コスト関数の重み. error * weight^2 * error.
+    //  targetAngularMomentum: 重心周り. ワールド座標系. [kg m^2/s]
     //状態が更新される度に, 手動でcalcForwardKinematics()とcalcCenterOfMass()を呼ぶ必要が有る.
     const cnoid::BodyPtr& robot() const { return robot_;}
     cnoid::BodyPtr& robot() { return robot_;}
     const cnoid::Matrix3d& eval_R() const { return eval_R_;}
     cnoid::Matrix3d& eval_R() { return eval_R_;}
 
-    const cnoid::Vector3& maxAngularMomentum() const { return maxAngularMomentum_;}
-    cnoid::Vector3& maxAngularMomentum() { return maxAngularMomentum_;}
-    const cnoid::Vector3& minAngularMomentum() const { return minAngularMomentum_;}
-    cnoid::Vector3& minAngularMomentum() { return minAngularMomentum_;}
+    const cnoid::Vector3& targetAngularMomentum() const { return targetAngularMomentum_;}
+    cnoid::Vector3& targetAngularMomentum() { return targetAngularMomentum_;}
     const double& dt() const { return dt_;}
     double& dt() { return dt_;}
 
@@ -39,23 +38,21 @@ namespace IK{
     // 収束判定
     bool checkConvergence () override;
 
-    const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobianineq (const std::vector<cnoid::LinkPtr>& joints) override;
-    const Eigen::VectorXd& calc_minineq () override;
-    const Eigen::VectorXd& calc_maxineq () override;
+    const Eigen::SparseMatrix<double,Eigen::RowMajor>& calc_jacobian (const std::vector<cnoid::LinkPtr>& joints) override;
+    const Eigen::VectorXd& calc_error () override;
   protected:
     cnoid::BodyPtr robot_ = nullptr;
     cnoid::Matrix3d eval_R_ = cnoid::Matrix3d::Identity();
 
-    cnoid::Vector3 maxAngularMomentum_ = 1.0 * cnoid::Vector3::Ones();
-    cnoid::Vector3 minAngularMomentum_ = -1.0 * cnoid::Vector3::Ones();
+    cnoid::Vector3 targetAngularMomentum_ = cnoid::Vector3::Ones();
     double dt_;
 
     cnoid::Vector3 maxError_ = 0.1 * cnoid::Vector3::Ones();
     cnoid::Vector3 precision_ = 1e-4 * cnoid::Vector3::Ones();
     cnoid::Vector3 weight_ = cnoid::Vector3::Ones();
 
-    cnoid::BodyPtr jacobianineq_robot_ = nullptr;// 前回のjacobian計算時のrobot
-    Eigen::SparseMatrix<double,Eigen::RowMajor> jacobianineq_full_;
+    cnoid::BodyPtr jacobian_robot_ = nullptr;// 前回のjacobian計算時のrobot
+    Eigen::SparseMatrix<double,Eigen::RowMajor> jacobian_full_;
 
     static void calcAngularMomentumJacobianShape(const std::vector<cnoid::LinkPtr>& joints,//input
                                                  const cnoid::BodyPtr& A_robot,//input

@@ -144,76 +144,64 @@ namespace IK{
       for(int i=0;i<this->robot_->numJoints();i++) dq[i] = this->robot_->joint(i)->dq();
       dq.segment<3>(this->robot_->numJoints()) = this->robot_->rootLink()->v();
       dq.tail<3>() = this->robot_->rootLink()->w();
-      cnoid::Vector3 dAM = this->eval_R_.transpose() * AMJ * dq; //eval_R系
-      cnoid::Vector3 upper = (this->maxAngularMomentum_ - dAM) * this->dt_; //eval_R系  [kg m^2]
-      cnoid::Vector3 lower = (this->minAngularMomentum_ - dAM) * this->dt_; //eval_R系  [kg m^2]
+      cnoid::Vector3 error = this->eval_R_.transpose() * (this->targetAngularMomentum_ - AMJ * dq) * this->dt_; //eval_R系  [kg m^2]
 
       cnoid::Matrix3 I = AMJ.block<3,3>(0,this->robot_->numJoints()+3); //world系
-      cnoid::Matrix3 I_evalR = this->eval_R_.transpose() * I * this->eval_R_;
+      cnoid::Matrix3 I_evalR = this->eval_R_.transpose() * I * this->eval_R_; //eval_R系
       cnoid::Matrix3 I_evalR_inv;
       I_evalR_inv <<
         1.0/I_evalR(0,0), 0.0, 0.0,
         0.0, 1.0/I_evalR(1,1), 0.0,
         0.0, 0.0, 1.0/I_evalR(2,2);
-      cnoid::Vector3 upper_scaled = I_evalR_inv * upper; //eval_R系  [rad]
-      cnoid::Vector3 lower_scaled = I_evalR_inv * lower; //eval_R系  [rad]
+      cnoid::Vector3 error_scaled = I_evalR_inv * error; //eval_R系  [rad]
 
-      if(this->minineq_.rows() != 3) this->minineq_ = Eigen::VectorXd(3);
-      for(int i=0;i<3;i++) this->minineq_[i] = std::min(lower_scaled[i], this->maxError_[i]) * this->weight_[i];
-      if(this->maxineq_.rows() != 3) this->maxineq_ = Eigen::VectorXd(3);
-      for(int i=0;i<3;i++) this->maxineq_[i] = std::max(upper_scaled[i], -this->maxError_[i]) * this->weight_[i];
+      if(this->error_.rows() != 3) this->error_ = Eigen::VectorXd(3);
+      for(int i=0;i<3;i++) this->error_[i] = std::max(std::min(error_scaled[i], this->maxError_[i]), -this->maxError_[i]) * this->weight_[i];
 
       bool converged = true;
       for(size_t i=0; i<3; i++){
         if(this->weight_[i]>0.0) {
-          if(upper[i] < -this->precision_[i]) converged = false;
-          if(lower[i] >  this->precision_[i]) converged = false;
+          if(std::abs(error[i]) > this->precision_[i]) converged = false;
         }
       }
 
       if(this->debuglevel_>=1){
         std::cerr << "AngularMomentumConstraint" << std::endl;
-        std::cerr << "dAM" << std::endl;
-        std::cerr << dAM << std::endl;
+        std::cerr << "AngularMomentum" << std::endl;
+        std::cerr << this->eval_R_.transpose() * AMJ * dq * this->dt_ << std::endl;
         std::cerr << "I_evalR" << std::endl;
         std::cerr << I_evalR << std::endl;
-        std::cerr << "upper" << std::endl;
-        std::cerr << upper << std::endl;
-        std::cerr << "lower" << std::endl;
-        std::cerr << lower << std::endl;
-        std::cerr << "upper_scaled" << std::endl;
-        std::cerr << upper_scaled << std::endl;
-        std::cerr << "lower_scaled" << std::endl;
-        std::cerr << lower_scaled << std::endl;
+        std::cerr << "error" << std::endl;
+        std::cerr << error << std::endl;
+        std::cerr << "error_scaled" << std::endl;
+        std::cerr << error_scaled << std::endl;
       }
 
       return converged;
     }
 
-    if(this->minineq_.rows() != 0) this->minineq_ = Eigen::VectorXd(0);
-    if(this->maxineq_.rows() != 0) this->maxineq_ = Eigen::VectorXd(0);
     return true;
   }
 
-  const Eigen::SparseMatrix<double,Eigen::RowMajor>& AngularMomentumConstraint::calc_jacobianineq (const std::vector<cnoid::LinkPtr>& joints) {
+  const Eigen::SparseMatrix<double,Eigen::RowMajor>& AngularMomentumConstraint::calc_jacobian (const std::vector<cnoid::LinkPtr>& joints) {
     // 行列の初期化. 前回とcol形状が変わっていないなら再利用
-    if(!this->is_joints_same(joints,this->jacobianineq_joints_)
-       || this->robot_ != this->jacobianineq_robot_){
-      this->jacobianineq_joints_ = joints;
-      this->jacobianineq_robot_ = this->robot_;
+    if(!this->is_joints_same(joints,this->jacobian_joints_)
+       || this->robot_ != this->jacobian_robot_){
+      this->jacobian_joints_ = joints;
+      this->jacobian_robot_ = this->robot_;
 
-      AngularMomentumConstraint::calcAngularMomentumJacobianShape(this->jacobianineq_joints_,
-                                                                  this->jacobianineq_robot_,
+      AngularMomentumConstraint::calcAngularMomentumJacobianShape(this->jacobian_joints_,
+                                                                  this->jacobian_robot_,
                                                                   nullptr,
-                                                                  this->jacobianineq_full_,
-                                                                  this->jacobianineqColMap_);
+                                                                  this->jacobian_full_,
+                                                                  this->jacobianColMap_);
     }
 
-    AngularMomentumConstraint::calcAngularMomentumJacobianCoef(this->jacobianineq_joints_,
-                                                               this->jacobianineq_robot_,
+    AngularMomentumConstraint::calcAngularMomentumJacobianCoef(this->jacobian_joints_,
+                                                               this->jacobian_robot_,
                                                                nullptr,
-                                                               this->jacobianineqColMap_,
-                                                               this->jacobianineq_full_);
+                                                               this->jacobianColMap_,
+                                                               this->jacobian_full_);
 
     Eigen::MatrixXd AMJ;
     cnoid18::calcAngularMomentumJacobian(this->robot_,nullptr,AMJ); // [joint root]の順. comまわり
@@ -224,36 +212,26 @@ namespace IK{
     Eigen::SparseMatrix<double,Eigen::RowMajor> eval_R(3,3);
     for(int i=0;i<3;i++) for(int j=0;j<3;j++) eval_R.insert(i,j) = this->eval_R_(i,j);
 
-    this->jacobianineq_ = eval_R.transpose() * I_inv * this->jacobianineq_full_;
-    for(size_t i=0;i<3;i++) this->jacobianineq_.row(i) *= this->weight_[i];
+    this->jacobian_ = eval_R.transpose() * I_inv * this->jacobian_full_;
+    for(size_t i=0;i<3;i++) this->jacobian_.row(i) *= this->weight_[i];
 
     if(this->debuglevel_>=1){
       std::cerr << "AngularMomentumConstraint" << std::endl;
-      std::cerr << "jacobiaineq" << std::endl;
-      std::cerr << this->jacobianineq_ << std::endl;
+      std::cerr << "jacobian" << std::endl;
+      std::cerr << this->jacobian_ << std::endl;
     }
 
-    return this->jacobianineq_;
+    return this->jacobian_;
   }
 
-  const Eigen::VectorXd& AngularMomentumConstraint::calc_minineq () {
+  const Eigen::VectorXd& AngularMomentumConstraint::calc_error () {
     if(this->debuglevel_>=1){
       std::cerr << "AngularMomentumConstraint" << std::endl;
-      std::cerr << "minineq" << std::endl;
-      std::cerr << this->minineq_ << std::endl;
+      std::cerr << "error" << std::endl;
+      std::cerr << this->error_ << std::endl;
     }
 
-    return this->minineq_;
-  }
-
-  const Eigen::VectorXd& AngularMomentumConstraint::calc_maxineq () {
-    if(this->debuglevel_>=1){
-      std::cerr << "AngularMomentumConstraint" << std::endl;
-      std::cerr << "maxineq" << std::endl;
-      std::cerr << this->maxineq_ << std::endl;
-    }
-
-    return this->maxineq_;
+    return this->error_;
   }
 
   void AngularMomentumConstraint::calcAngularMomentumJacobianShape(const std::vector<cnoid::LinkPtr>& joints,

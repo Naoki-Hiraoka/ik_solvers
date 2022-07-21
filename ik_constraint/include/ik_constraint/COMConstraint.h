@@ -38,7 +38,7 @@ namespace IK{
     const cnoid::Vector3& weight() const { return weight_;}
     cnoid::Vector3& weight() { return weight_;}
 
-    // for inequality
+    // for inequality. (c * 重心位置)をdlとduの範囲内にする.
     const Eigen::SparseMatrix<double,Eigen::RowMajor>& C() const { return C_;}
     Eigen::SparseMatrix<double,Eigen::RowMajor>& C() { return C_;}
     const cnoid::VectorX& dl() const { return dl_;}

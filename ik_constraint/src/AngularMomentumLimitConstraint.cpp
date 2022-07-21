@@ -57,8 +57,6 @@ namespace IK{
       return converged;
     }
 
-    if(this->minineq_.rows() != 0) this->minineq_ = Eigen::VectorXd(0);
-    if(this->maxineq_.rows() != 0) this->maxineq_ = Eigen::VectorXd(0);
     return true;
   }
 

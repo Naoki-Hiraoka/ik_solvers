@@ -120,7 +120,7 @@ namespace prioritized_inverse_kinematics_solver {
         variables[i]->p() += result.segment<3>(idx);
         if(result.segment<3>(idx+3).norm() != 0){
           variables[i]->R() = cnoid::Matrix3(cnoid::AngleAxis(result.segment<3>(idx+3).norm(), cnoid::Vector3(result.segment<3>(idx+3).normalized())) * cnoid::AngleAxis(variables[i]->R()));
-          // 単純に3x3行列の空間でRを操作していると、だんだん数値誤差によってユニタリ行列でなくなってしまう
+          // 単純に3x3行列の空間でRを操作していると、だんだん数値誤差によって回転行列でなくなってしまう
           //const cnoid::Matrix3 dR = cnoid::Matrix3(cnoid::AngleAxis(result.segment<3>(idx+3).norm(), cnoid::Vector3(result.segment<3>(idx+3).normalized())));
           //variables[i]->R() = (dR * variables[i]->R()).eval();
         }

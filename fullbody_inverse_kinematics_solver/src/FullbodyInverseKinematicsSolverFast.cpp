@@ -139,17 +139,50 @@ namespace fik {
     }
   }
 
-  int solveFullbodyIKLoopFast (const cnoid::BodyPtr& robot, const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list, cnoid::VectorX& jlim_avoid_weight_old, const cnoid::VectorX& dq_weight_all, const size_t max_iteration, double wn, int debugLevel) {
+  class InitialJointState {
+  public:
+    InitialJointState() {}
+    InitialJointState(const cnoid::Position& T_): T(T_) {}
+    InitialJointState(double q_): q(q_) {}
+    cnoid::Position T;
+    double q;
+  };
+
+  int solveFullbodyIKLoopFast (const cnoid::BodyPtr& robot, const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list, cnoid::VectorX& jlim_avoid_weight_old, const cnoid::VectorX& dq_weight_all, const size_t max_iteration, double wn, int debugLevel, double dt) {
+
+    // 開始時の関節角度を記憶. 後で速度の計算に使う
+    std::vector<InitialJointState> initialJointState(robot->numJoints()+1);
+    for(size_t i=0;i<robot->numJoints();i++){
+      initialJointState[i].q = robot->joint(i)->q();
+    }
+    initialJointState[robot->numJoints()].T = robot->rootLink()->T();
+
     size_t loop = 0;
     while (loop < max_iteration) {
-      robot->calcForwardKinematics();
+      // 速度を更新. dq_weight_all == 0.0の関節は更新しない
+      for(int i=0;i<3;i++) if(dq_weight_all[i] > 0.0) robot->rootLink()->v()[i] = (robot->rootLink()->p()[i] - initialJointState[robot->numJoints()].T.translation()[i]) / dt;
+      if((dq_weight_all.head<6>().tail<3>().array() > 0.0).count() > 0.0) {
+        cnoid::AngleAxis angleAxis = cnoid::AngleAxis(robot->rootLink()->R() * initialJointState[robot->numJoints()].T.linear().transpose());
+        robot->rootLink()->w() = angleAxis.angle()*angleAxis.axis() / dt;
+      }
+      for(size_t i=0;i<robot->numJoints();i++) if(dq_weight_all[6+i] > 0.0) robot->joint(i)->dq() = (robot->joint(i)->q() - initialJointState[i].q) / dt;
+
+      robot->calcForwardKinematics(true);
       robot->calcCenterOfMass();
       if (checkIKConvergence(ikc_list)) return loop;
       solveFullbodyIKOnceFast(robot, ikc_list, dq_weight_all, jlim_avoid_weight_old, wn, debugLevel);
       ++loop;
     }
 
-    robot->calcForwardKinematics();
+    // 速度を更新. dq_weight_all == 0.0の関節は更新しない
+    for(int i=0;i<3;i++) if(dq_weight_all[i] > 0.0) robot->rootLink()->v()[i] = (robot->rootLink()->p()[i] - initialJointState[robot->numJoints()].T.translation()[i]) / dt;
+    if((dq_weight_all.head<6>().tail<3>().array() > 0.0).count() > 0.0) {
+      cnoid::AngleAxis angleAxis = cnoid::AngleAxis(robot->rootLink()->R() * initialJointState[robot->numJoints()].T.linear().transpose());
+      robot->rootLink()->w() = angleAxis.angle()*angleAxis.axis() / dt;
+    }
+    for(size_t i=0;i<robot->numJoints();i++) if(dq_weight_all[6+i] > 0.0) robot->joint(i)->dq() = (robot->joint(i)->q() - initialJointState[i].q) / dt;
+
+    robot->calcForwardKinematics(true);
     robot->calcCenterOfMass();
 
     return loop;

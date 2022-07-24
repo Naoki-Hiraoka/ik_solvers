@@ -15,7 +15,8 @@ namespace fik {
                                const cnoid::VectorX& dq_weight_all,
                                const size_t max_iteration = 1,
                                double wn = 1e-6,
-                               int debugLevel = 0);
+                               int debugLevel = 0,
+                               double dt = 0.1);
 
 }
 

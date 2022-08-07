@@ -165,7 +165,19 @@ namespace fik {
         cnoid::AngleAxis angleAxis = cnoid::AngleAxis(robot->rootLink()->R() * initialJointState[robot->numJoints()].T.linear().transpose());
         robot->rootLink()->w() = angleAxis.angle()*angleAxis.axis() / dt;
       }
-      for(size_t i=0;i<robot->numJoints();i++) if(dq_weight_all[6+i] > 0.0) robot->joint(i)->dq() = (robot->joint(i)->q() - initialJointState[i].q) / dt;
+      for(size_t i=0;i<robot->numJoints();i++) {
+        if(dq_weight_all[6+i] > 0.0) {
+          robot->joint(i)->dq() = (robot->joint(i)->q() - initialJointState[i].q) / dt;
+          // check dq limit
+          if(robot->joint(i)->dq() > robot->joint(i)->dq_upper()) {
+            robot->joint(i)->q() -= (robot->joint(i)->dq() - robot->joint(i)->dq_upper()) * dt;
+            robot->joint(i)->dq() = robot->joint(i)->dq_upper();
+          }else if(robot->joint(i)->dq() < robot->joint(i)->dq_lower()) {
+            robot->joint(i)->q() += (robot->joint(i)->dq_lower() - robot->joint(i)->dq()) * dt;
+            robot->joint(i)->dq() = robot->joint(i)->dq_lower();
+          }
+        }
+      }
 
       robot->calcForwardKinematics(true);
       robot->calcCenterOfMass();

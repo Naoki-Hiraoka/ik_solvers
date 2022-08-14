@@ -16,7 +16,8 @@ namespace fik {
                                const size_t max_iteration = 1,
                                double wn = 1e-6,
                                int debugLevel = 0,
-                               double dt = 0.1);
+                               double dt = 0.1,
+                               double we = 1e0);
 
 }
 

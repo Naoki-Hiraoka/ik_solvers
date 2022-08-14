@@ -37,12 +37,12 @@ namespace fik {
     return converged;
   }
 
-  void solveFullbodyIKOnceFast (const cnoid::BodyPtr& robot, const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list, const cnoid::VectorX& dq_weight_all, cnoid::VectorX& jlim_avoid_weight_old, double wn, int debugLevel) {
+  void solveFullbodyIKOnceFast (const cnoid::BodyPtr& robot, const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list, const cnoid::VectorX& dq_weight_all, cnoid::VectorX& jlim_avoid_weight_old, double wn, int debugLevel, double we) {
     // Solvability-unconcerned Inverse Kinematics by Levenberg-Marquardt Method [sugihara:RSJ2009]
     // q = q + S_q^T * H^(-1) * g // S_q: selection matrix
     // g = J^T * We * e
     // H = J^T * We * J + Wn
-    // Wn = (e^T * We * e + \bar{wn}) * Wq // Wq: modify to insert dq weight
+    // Wn = (e^T * We * e * \bar{we} + \bar{wn}) * Wq // Wq: modify to insert dq weight
     // Weは既にIKConstraintクラスのJ,eに含まれている
     const Eigen::SparseMatrix<double,Eigen::RowMajor> S_q = toSelectionMatrix(dq_weight_all);
     const size_t VALID_Q_NUM = S_q.rows();
@@ -89,7 +89,7 @@ namespace fik {
       jlim_avoid_weight_old(6+j) = jlim_avoid_weight;
     }
     const Eigen::VectorXd dq_weight_all_final = S_q * static_cast<Eigen::VectorXd>(dq_weight_all.array() * dq_weight_all_jlim.array());
-    Eigen::SparseMatrix<double,Eigen::RowMajor> Wn = (sumError + wn) * toDiagonalMatrix(dq_weight_all_final);
+    Eigen::SparseMatrix<double,Eigen::RowMajor> Wn = (sumError * we + wn) * toDiagonalMatrix(dq_weight_all_final);
     H += Wn;
 
     // solve
@@ -148,7 +148,7 @@ namespace fik {
     double q;
   };
 
-  int solveFullbodyIKLoopFast (const cnoid::BodyPtr& robot, const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list, cnoid::VectorX& jlim_avoid_weight_old, const cnoid::VectorX& dq_weight_all, const size_t max_iteration, double wn, int debugLevel, double dt) {
+  int solveFullbodyIKLoopFast (const cnoid::BodyPtr& robot, const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list, cnoid::VectorX& jlim_avoid_weight_old, const cnoid::VectorX& dq_weight_all, const size_t max_iteration, double wn, int debugLevel, double dt, double we) {
 
     // 開始時の関節角度を記憶. 後で速度の計算に使う
     std::vector<InitialJointState> initialJointState(robot->numJoints()+1);
@@ -182,7 +182,7 @@ namespace fik {
       robot->calcForwardKinematics(true);
       robot->calcCenterOfMass();
       if (checkIKConvergence(ikc_list)) return loop;
-      solveFullbodyIKOnceFast(robot, ikc_list, dq_weight_all, jlim_avoid_weight_old, wn, debugLevel);
+      solveFullbodyIKOnceFast(robot, ikc_list, dq_weight_all, jlim_avoid_weight_old, wn, debugLevel, we);
       ++loop;
     }
 

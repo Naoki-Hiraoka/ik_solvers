@@ -133,9 +133,11 @@ namespace fik {
     }
     // update joint angles
     for (size_t i = 0; i < robot->numJoints(); ++i) {
-      robot->joint(i)->q() += dq_all(6+i);
-      if(robot->joint(i)->q() > robot->joint(i)->q_upper()) robot->joint(i)->q() = robot->joint(i)->q_upper();
-      if(robot->joint(i)->q() < robot->joint(i)->q_lower()) robot->joint(i)->q() = robot->joint(i)->q_lower();
+      if(dq_weight_all[i] > 0.0) {// dq_weight_all == 0.0の関節は更新しない
+        robot->joint(i)->q() += dq_all(6+i);
+        if(robot->joint(i)->q() > robot->joint(i)->q_upper()) robot->joint(i)->q() = robot->joint(i)->q_upper();
+        if(robot->joint(i)->q() < robot->joint(i)->q_lower()) robot->joint(i)->q() = robot->joint(i)->q_lower();
+      }
     }
   }
 

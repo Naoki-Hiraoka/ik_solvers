@@ -66,7 +66,10 @@ namespace fik {
       sumError += error.squaredNorm();
     }
 
-    // joint limit avoidance (copy from JointPathEx)
+    // joint limit avoidance
+    // T. F. Chang and R.-V. Dubey: "A weighted least-norm solution based
+    // scheme for avoiding joint limits for redundant manipulators", in IEEE
+    // Trans. On Robotics and Automation, 11((2):286-292, April 1995.
     if(jlim_avoid_weight_old.rows() != 6+robot->numJoints()) jlim_avoid_weight_old = Eigen::VectorXd::Zero(6+robot->numJoints());
     Eigen::VectorXd dq_weight_all_jlim = Eigen::VectorXd::Ones(6+robot->numJoints());
     for ( int j = 0; j < robot->numJoints() ; j++ ) {

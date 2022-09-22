@@ -37,7 +37,7 @@ namespace fik {
     return converged;
   }
 
-  void solveFullbodyIKOnceFast (const cnoid::BodyPtr& robot, const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list, const cnoid::VectorX& dq_weight_all, cnoid::VectorX& jlim_avoid_weight_old, double wn, int debugLevel, double we) {
+  void solveFullbodyIKOnceFast (const cnoid::BodyPtr& robot, const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list, const cnoid::VectorX& dq_weight_all, cnoid::VectorX& jlim_avoid_weight_old, double wn, int debugLevel, double we, bool enable_jlim_avoid) {
     // Solvability-unconcerned Inverse Kinematics by Levenberg-Marquardt Method [sugihara:RSJ2009]
     // q = q + S_q^T * H^(-1) * g // S_q: selection matrix
     // g = J^T * We * e
@@ -72,24 +72,26 @@ namespace fik {
     // Trans. On Robotics and Automation, 11((2):286-292, April 1995.
     if(jlim_avoid_weight_old.rows() != 6+robot->numJoints()) jlim_avoid_weight_old = Eigen::VectorXd::Zero(6+robot->numJoints());
     Eigen::VectorXd dq_weight_all_jlim = Eigen::VectorXd::Ones(6+robot->numJoints());
-    for ( int j = 0; j < robot->numJoints() ; j++ ) {
-      double jang = robot->joint(j)->q();
-      double jmax = robot->joint(j)->q_upper();
-      double jmin = robot->joint(j)->q_lower();
-      const double e = 0.017453;
-      double jlim_avoid_weight;
-      if ( jmax - jmin > 2 * e) {
-        if ( jang > jmax - e ) jang = jmax - e;
-        if ( jang < jmin + e ) jang = jmin + e;
-        jlim_avoid_weight = std::fabs( (std::pow((jmax - jmin),2) * (( 2 * jang) - jmax - jmin)) / (4 * std::pow((jmax - jang),2) * std::pow((jang - jmin),2)) );
-        if (std::isnan(jlim_avoid_weight)) jlim_avoid_weight = 0;
-      } else {
-        jlim_avoid_weight = std::numeric_limits<double>::max();
+    if(enable_jlim_avoid){
+      for ( int j = 0; j < robot->numJoints() ; j++ ) {
+        double jang = robot->joint(j)->q();
+        double jmax = robot->joint(j)->q_upper();
+        double jmin = robot->joint(j)->q_lower();
+        const double e = 0.017453;
+        double jlim_avoid_weight;
+        if ( jmax - jmin > 2 * e) {
+          if ( jang > jmax - e ) jang = jmax - e;
+          if ( jang < jmin + e ) jang = jmin + e;
+          jlim_avoid_weight = std::fabs( (std::pow((jmax - jmin),2) * (( 2 * jang) - jmax - jmin)) / (4 * std::pow((jmax - jang),2) * std::pow((jang - jmin),2)) );
+          if (std::isnan(jlim_avoid_weight)) jlim_avoid_weight = 0;
+        } else {
+          jlim_avoid_weight = std::numeric_limits<double>::max();
+        }
+        if (( jlim_avoid_weight - jlim_avoid_weight_old(6+j) ) >= 0 ) { // add weight only if q approaching to the limit
+          dq_weight_all_jlim(6+j) += jlim_avoid_weight;
+        }
+        jlim_avoid_weight_old(6+j) = jlim_avoid_weight;
       }
-      if (( jlim_avoid_weight - jlim_avoid_weight_old(6+j) ) >= 0 ) { // add weight only if q approaching to the limit
-        dq_weight_all_jlim(6+j) += jlim_avoid_weight;
-      }
-      jlim_avoid_weight_old(6+j) = jlim_avoid_weight;
     }
     const Eigen::VectorXd dq_weight_all_final = S_q * static_cast<Eigen::VectorXd>(dq_weight_all.array() * dq_weight_all_jlim.array());
     Eigen::SparseMatrix<double,Eigen::RowMajor> Wn = (sumError * we + wn) * toDiagonalMatrix(dq_weight_all_final);
@@ -153,7 +155,7 @@ namespace fik {
     double q;
   };
 
-  int solveFullbodyIKLoopFast (const cnoid::BodyPtr& robot, const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list, cnoid::VectorX& jlim_avoid_weight_old, const cnoid::VectorX& dq_weight_all, const size_t max_iteration, double wn, int debugLevel, double dt, double we) {
+  int solveFullbodyIKLoopFast (const cnoid::BodyPtr& robot, const std::vector<std::shared_ptr<IK::IKConstraint> >& ikc_list, cnoid::VectorX& jlim_avoid_weight_old, const cnoid::VectorX& dq_weight_all, const size_t max_iteration, double wn, int debugLevel, double dt, double we, bool enable_jlim_avoid) {
 
     // 開始時の関節角度を記憶. 後で速度の計算に使う
     std::vector<InitialJointState> initialJointState(robot->numJoints()+1);
@@ -187,7 +189,7 @@ namespace fik {
       robot->calcForwardKinematics(true);
       robot->calcCenterOfMass();
       if (checkIKConvergence(ikc_list)) return loop;
-      solveFullbodyIKOnceFast(robot, ikc_list, dq_weight_all, jlim_avoid_weight_old, wn, debugLevel, we);
+      solveFullbodyIKOnceFast(robot, ikc_list, dq_weight_all, jlim_avoid_weight_old, wn, debugLevel, we, enable_jlim_avoid);
       ++loop;
     }
 

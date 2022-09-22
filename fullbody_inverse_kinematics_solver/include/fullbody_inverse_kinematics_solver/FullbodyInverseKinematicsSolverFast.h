@@ -17,7 +17,8 @@ namespace fik {
                                double wn = 1e-6,
                                int debugLevel = 0,
                                double dt = 0.1,
-                               double we = 1e0);
+                               double we = 1e0,
+                               bool enable_jlim_avoid = true);
 
 }
 

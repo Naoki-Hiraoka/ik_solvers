@@ -1,21 +1,19 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(prioritized_inverse_kinematics_solver)
 
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 set(CMAKE_BUILD_TYPE Release)
 
 find_package(catkin REQUIRED COMPONENTS
   ik_constraint
-  prioritized_qp
+  prioritized_qp_osqp
   )
 find_package(choreonoid REQUIRED)
-find_package(OsqpEigen REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES prioritized_inverse_kinematics_solver
-  CATKIN_DEPENDS ik_constraint prioritized_qp
-  DEPENDS OsqpEigen
+  CATKIN_DEPENDS ik_constraint prioritized_qp_osqp
 )
 
 ###########
@@ -44,7 +42,6 @@ add_library(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${CHOREONOID_BODY_LIBRARIES_ABS}
-  OsqpEigen::OsqpEigen
   )
 
 #############

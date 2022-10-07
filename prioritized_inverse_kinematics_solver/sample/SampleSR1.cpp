@@ -1,5 +1,5 @@
 #include <prioritized_inverse_kinematics_solver/PrioritizedInverseKinematicsSolver.h>
-#include <prioritized_qp/PrioritizedQPSolver.h>
+#include <prioritized_qp_osqp/prioritized_qp_osqp.h>
 #include <ik_constraint/PositionConstraint.h>
 #include <ik_constraint/COMConstraint.h>
 #include <ik_constraint/JointAngleConstraint.h>

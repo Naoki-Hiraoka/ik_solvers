@@ -1,13 +1,12 @@
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++14)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 find_package(catkin REQUIRED COMPONENTS
   ik_constraint
-  prioritized_qp
+  prioritized_qp_osqp
   roslib
   )
 find_package(choreonoid REQUIRED)
-find_package(osqp REQUIRED)
 
 include_directories(
   include
@@ -30,7 +29,6 @@ target_link_libraries(sampleSR1
   ${catkin_LIBRARIES}
   ${CHOREONOID_BODY_LIBRARIES_ABS}
   ${PROJECT_NAME}
-  OsqpEigen::OsqpEigen
   )
 
 install(TARGETS sampleSR1

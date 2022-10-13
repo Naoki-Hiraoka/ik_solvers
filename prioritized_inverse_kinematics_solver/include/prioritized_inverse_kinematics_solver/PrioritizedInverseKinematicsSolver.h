@@ -12,13 +12,20 @@ namespace prioritized_inverse_kinematics_solver {
     ikc_list: タスクたち. vectorの前の要素の方が高優先度. 0番目の要素は必ず満たすと仮定しQPを解かない
     prevTasks: 前回のtasksを入れる. 自動的に更新される.
    */
+  class IKParam {
+  public:
+    size_t maxIteration = 1;
+    double wn = 1e-6;
+    std::vector<double> wnVec; // wnVec.size() == ikc_list.size()の場合、wnの代わりにこっちを使う
+    double we = 1e0;
+    std::vector<double> weVec; // weVec.size() == ikc_list.size()の場合、weの代わりにこっちを使う
+    int debugLevel = 0;
+    double dt = 0.1;
+  };
   int solveIKLoop (const std::vector<cnoid::LinkPtr>& variables,
                    const std::vector<std::vector<std::shared_ptr<IK::IKConstraint> > >& ikc_list,
                    std::vector<std::shared_ptr<prioritized_qp_base::Task> >& prevTasks,
-                   size_t max_iteration = 1,
-                   double wn = 1e-6,
-                   int debugLevel = 0,
-                   double dt = 0.1,
+                   const IKParam& param = IKParam(),
                    std::function<void(std::shared_ptr<prioritized_qp_base::Task>&,int)> taskGeneratorFunc = [](std::shared_ptr<prioritized_qp_base::Task>& task, int debugLevel){
                      std::shared_ptr<prioritized_qp_osqp::Task> taskOSQP = std::dynamic_pointer_cast<prioritized_qp_osqp::Task>(task);
                      if(!taskOSQP){

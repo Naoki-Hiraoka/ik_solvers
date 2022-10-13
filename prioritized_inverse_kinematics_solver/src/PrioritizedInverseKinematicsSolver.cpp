@@ -21,16 +21,15 @@ namespace prioritized_inverse_kinematics_solver {
   void solveIKOnce (const std::vector<cnoid::LinkPtr>& variables,
                     const std::vector<std::vector<std::shared_ptr<IK::IKConstraint> > >& ikc_list,
                     std::vector<std::shared_ptr<prioritized_qp_base::Task> >& prevTasks,
-                    std::function<void(std::shared_ptr<prioritized_qp_base::Task>&,int)> taskGeneratorFunc,
-                    double wn,
-                    int debugLevel) {
+                    const IKParam& param,
+                    std::function<void(std::shared_ptr<prioritized_qp_base::Task>&,int)> taskGeneratorFunc) {
     // Solvability-unconcerned Inverse Kinematics by Levenberg-Marquardt Method [sugihara:RSJ2009]
     // H = J^T * We * J + Wn
     // Wn = (e^T * We * e + \bar{wn}) * Wq // Wq: modify to insert dq weight
     // Weは既にIKConstraintクラスのJ,eに含まれている
 
     cnoid::TimeMeasure timer;
-    if(debugLevel>0) timer.begin();
+    if(param.debugLevel>0) timer.begin();
 
     double dim = 0;
     for(size_t i=0;i<variables.size();i++) dim+=IK::IKConstraint::getJointDOF(variables[i]);
@@ -40,7 +39,7 @@ namespace prioritized_inverse_kinematics_solver {
       prevTasks.resize(ikc_list.size(),nullptr);
     }
     for(size_t i=0;i<ikc_list.size();i++){
-      taskGeneratorFunc(prevTasks[i],debugLevel);
+      taskGeneratorFunc(prevTasks[i],param.debugLevel);
 
       if(i!=0) prevTasks[i]->toSolve() = true;
       else prevTasks[i]->toSolve() = false;
@@ -91,14 +90,14 @@ namespace prioritized_inverse_kinematics_solver {
         if(prevTasks[i]->dl()[j]>0) sumError += std::pow(prevTasks[i]->dl()[j],2);
         if(prevTasks[i]->du()[j]<0) sumError += std::pow(prevTasks[i]->du()[j],2);
       }
-      prevTasks[i]->w() = cnoid::VectorXd::Ones(dim) * (sumError + wn);
+      prevTasks[i]->w() = cnoid::VectorXd::Ones(dim) * (sumError * ((param.weVec.size()==ikc_list.size())?param.weVec[i]:param.we)+ ((param.wnVec.size()==ikc_list.size())?param.wnVec[i]:param.wn));
 
-      if(debugLevel>0) prevTasks[i]->name() = std::string("Task") + std::to_string(i);
+      if(param.debugLevel>0) prevTasks[i]->name() = std::string("Task") + std::to_string(i);
     }
 
     // solve
     cnoid::VectorX result;
-    if(!prioritized_qp_base::solve(prevTasks, result, debugLevel)){
+    if(!prioritized_qp_base::solve(prevTasks, result, param.debugLevel)){
       std::cerr <<"[PrioritizedIK] prioritized_qp_base::solve failed" << std::endl;
       return;
     }
@@ -132,7 +131,7 @@ namespace prioritized_inverse_kinematics_solver {
       idx += IK::IKConstraint::getJointDOF(variables[i]);
     }
 
-    if(debugLevel>0) {
+    if(param.debugLevel>0) {
       double time = timer.measure();
       std::cerr << "[PrioritizedIK] solveIKOnce time: " << time << "[s]" << std::endl;
     }
@@ -151,10 +150,7 @@ namespace prioritized_inverse_kinematics_solver {
   int solveIKLoop (const std::vector<cnoid::LinkPtr>& variables,
                    const std::vector<std::vector<std::shared_ptr<IK::IKConstraint> > >& ikc_list,
                    std::vector<std::shared_ptr<prioritized_qp_base::Task> >& prevTasks,
-                   size_t max_iteration,
-                   double wn,
-                   int debugLevel,
-                   double dt,
+                   const IKParam& param,
                    std::function<void(std::shared_ptr<prioritized_qp_base::Task>&,int)> taskGeneratorFunc) {
     std::set<cnoid::BodyPtr> bodies;
     for(size_t i=0;i<variables.size();i++){
@@ -169,17 +165,17 @@ namespace prioritized_inverse_kinematics_solver {
     }
 
     size_t loop = 0;
-    while (loop < max_iteration) {
+    while (loop < param.maxIteration) {
       for(size_t i=0;i<variables.size();i++){
         if(variables[i]->isFreeJoint()) {
           cnoid::Position& initialT = initialJointStateMap[variables[i]].T;
-          variables[i]->v() = (variables[i]->p() - initialT.translation()) / dt;
+          variables[i]->v() = (variables[i]->p() - initialT.translation()) / param.dt;
           cnoid::AngleAxis angleAxis = cnoid::AngleAxis(variables[i]->R() * initialT.linear().transpose());
-          variables[i]->w() = angleAxis.angle()*angleAxis.axis() / dt;
+          variables[i]->w() = angleAxis.angle()*angleAxis.axis() / param.dt;
         }
         else if(variables[i]->isRotationalJoint() || variables[i]->isPrismaticJoint()) {
           double initialq = initialJointStateMap[variables[i]].q;
-          variables[i]->dq() = (variables[i]->q() - initialq) / dt;
+          variables[i]->dq() = (variables[i]->q() - initialq) / param.dt;
         }
       }
       for(std::set<cnoid::BodyPtr>::iterator it=bodies.begin(); it != bodies.end(); it++){
@@ -188,20 +184,20 @@ namespace prioritized_inverse_kinematics_solver {
       }
 
       if (checkIKConvergence(ikc_list)) return loop;
-      solveIKOnce(variables, ikc_list, prevTasks, taskGeneratorFunc, wn, debugLevel);
+      solveIKOnce(variables, ikc_list, prevTasks, param, taskGeneratorFunc);
       ++loop;
     }
 
     for(size_t i=0;i<variables.size();i++){
       if(variables[i]->isFreeJoint()) {
         cnoid::Position& initialT = initialJointStateMap[variables[i]].T;
-        variables[i]->v() = (variables[i]->p() - initialT.translation()) / dt;
+        variables[i]->v() = (variables[i]->p() - initialT.translation()) / param.dt;
         cnoid::AngleAxis angleAxis = cnoid::AngleAxis(variables[i]->R() * initialT.linear().transpose());
-        variables[i]->w() = angleAxis.angle()*angleAxis.axis() / dt;
+        variables[i]->w() = angleAxis.angle()*angleAxis.axis() / param.dt;
       }
       else if(variables[i]->isRotationalJoint() || variables[i]->isPrismaticJoint()) {
         double initialq = initialJointStateMap[variables[i]].q;
-        variables[i]->dq() = (variables[i]->q() - initialq) / dt;
+        variables[i]->dq() = (variables[i]->q() - initialq) / param.dt;
       }
     }
     for(std::set<cnoid::BodyPtr>::iterator it=bodies.begin(); it != bodies.end(); it++){

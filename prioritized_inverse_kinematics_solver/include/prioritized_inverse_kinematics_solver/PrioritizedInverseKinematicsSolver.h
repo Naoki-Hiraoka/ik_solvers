@@ -15,6 +15,7 @@ namespace prioritized_inverse_kinematics_solver {
   class IKParam {
   public:
     size_t maxIteration = 1;
+    std::vector<double> dqWeight; // dqWeight.size() == dimの場合、探索変数の各要素について、wn+weをdqWeight倍する.
     double wn = 1e-6;
     std::vector<double> wnVec; // wnVec.size() == ikc_list.size()の場合、wnの代わりにこっちを使う
     double we = 1e0;

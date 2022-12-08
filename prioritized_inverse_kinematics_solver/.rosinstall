@@ -9,5 +9,5 @@
     uri: https://github.com/Naoki-Hiraoka/abseil_catkin.git
     local-name: abseil_catkin
 - git:
-    local-name: ik_solvers
+    local-name: prioritized_qp
     uri: https://github.com/Naoki-Hiraoka/prioritized_qp.git

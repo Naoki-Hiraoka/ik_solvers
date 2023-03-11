@@ -11,9 +11,47 @@ namespace IK{
   bool PositionConstraint::checkConvergence () {
     const cnoid::Position& A_pos = (this->A_link_) ? this->A_link_->T() * this->A_localpos_ : this->A_localpos_;
     const cnoid::Position& B_pos = (this->B_link_) ? this->B_link_->T() * this->B_localpos_ : this->B_localpos_;
-    cnoid::Vector6 error;
-    cnoid::AngleAxis angleAxis = cnoid::AngleAxis(A_pos.linear() * B_pos.linear().transpose());
-    error << A_pos.translation() - B_pos.translation() , angleAxis.angle()*angleAxis.axis();
+
+    cnoid::Vector6 error; // world frame
+    const cnoid::Vector3 pos_error = A_pos.translation() - B_pos.translation();
+    cnoid::Vector3 rot_error = cnoid::Vector3::Zero();
+    if((this->weight_.tail<3>().array() > 0.0).count() == 2 &&
+       ((this->eval_link_ == this->A_link_) || (this->eval_link_ == this->B_link_)) ) {
+      cnoid::Vector3 axis; // evalR local
+      if(this->weight_[3] == 0.0) axis = cnoid::Vector3::UnitX();
+      else if(this->weight_[4] == 0.0) axis = cnoid::Vector3::UnitY();
+      else if(this->weight_[5] == 0.0) axis = cnoid::Vector3::UnitZ();
+      cnoid::Matrix3d eval_R = (this->eval_link_) ? this->eval_link_->R() * this->eval_localR_ : this->eval_localR_;
+      // A_axisとB_axisを一致させる
+      cnoid::Vector3 A_axis; // world frame
+      cnoid::Vector3 B_axis; // world frame
+      if(this->eval_link_ == this->A_link_){
+        A_axis = eval_R * axis;
+        B_axis = B_pos.linear() * A_pos.linear().transpose() * A_axis;
+      }else{ // this->eval_link_ == this->B_link_
+        B_axis = eval_R * axis;
+        A_axis = A_pos.linear() * B_pos.linear().transpose() * B_axis;
+      }
+      Eigen::Vector3d cross = B_axis.cross(A_axis);
+      double dot = std::min(1.0,std::max(-1.0,B_axis.dot(A_axis))); // acosは定義域外のときnanを返す
+      if(cross.norm()==0){ // 0度 or 180度.
+        if(dot == -1){ // 180度
+          if(this->weight_[3] == 0.0) rot_error = eval_R * M_PI * cnoid::Vector3::UnitY();
+          else if(this->weight_[4] == 0.0) rot_error = eval_R * M_PI * cnoid::Vector3::UnitZ();
+          else if(this->weight_[5] == 0.0) rot_error = eval_R * M_PI * cnoid::Vector3::UnitX();
+        }else{
+          // rot_error.setZero();
+        }
+      }else{
+        double angle = std::acos(dot); // 0~pi
+        Eigen::Vector3d axis_ = cross.normalized(); // include sign
+        rot_error = angle * axis_;
+      }
+    }else{
+      const cnoid::AngleAxis angleAxis = cnoid::AngleAxis(A_pos.linear() * B_pos.linear().transpose());
+      rot_error = angleAxis.angle()*angleAxis.axis();
+    }
+    error << pos_error , rot_error;
 
     cnoid::Matrix3d eval_R = (this->eval_link_) ? this->eval_link_->R() * this->eval_localR_ : this->eval_localR_;
     error.head<3>() = (eval_R.transpose() * error.head<3>()).eval();

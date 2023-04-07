@@ -76,10 +76,8 @@ namespace IK{
       this->jacobianineq_ = Eigen::SparseMatrix<double,Eigen::RowMajor>(rows,cols);
 
       if(this->jacobianineqColMap_.find(this->jacobianineq_joint_) != this->jacobianineqColMap_.end()){
-        if(this->jacobianineq_joint_->isRotationalJoint() || this->jacobianineq_joint_->isPrismaticJoint()){
-          for(size_t i=0;i<rows;i++){
-            this->jacobianineq_.insert(rows,this->jacobianineqColMap_[this->jacobianineq_joint_]+i) = 1;
-          }
+        for(size_t i=0;i<rows;i++){
+          this->jacobianineq_.insert(rows,this->jacobianineqColMap_[this->jacobianineq_joint_]+i) = 1;
         }
       }
 

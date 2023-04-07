@@ -144,7 +144,7 @@ namespace IK{
       for(int i=0;i<this->robot_->numJoints();i++) dq[i] = this->robot_->joint(i)->dq();
       dq.segment<3>(this->robot_->numJoints()) = this->robot_->rootLink()->v();
       dq.tail<3>() = this->robot_->rootLink()->w();
-      cnoid::Vector3 error = this->eval_R_.transpose() * (this->targetAngularMomentum_ - AMJ * dq) * this->dt_; //eval_R系  [kg m^2]
+      cnoid::Vector3 error = this->eval_R_.transpose() * (AMJ * dq - this->targetAngularMomentum_) * this->dt_; //eval_R系  [kg m^2]
 
       cnoid::Matrix3 I = AMJ.block<3,3>(0,this->robot_->numJoints()+3); //world系
       cnoid::Matrix3 I_evalR = this->eval_R_.transpose() * I * this->eval_R_; //eval_R系

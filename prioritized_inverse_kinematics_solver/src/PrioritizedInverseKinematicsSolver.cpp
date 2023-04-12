@@ -115,8 +115,9 @@ namespace prioritized_inverse_kinematics_solver {
       if(variables[i]->isRevoluteJoint() || variables[i]->isPrismaticJoint()){
         // update joint angles
         variables[i]->q() += result[idx];
-        if(variables[i]->q() > variables[i]->q_upper()) variables[i]->q() = variables[i]->q_upper();
-        if(variables[i]->q() < variables[i]->q_lower()) variables[i]->q() = variables[i]->q_lower();
+        // 関節角度上下限チェックはしない. JointLimitConstraintを使うこと. JointLimitConstraint無しで関節角度上下限チェックだけすると、逆運動学の結果が不正確になってしまう
+        // if(variables[i]->q() > variables[i]->q_upper()) variables[i]->q() = variables[i]->q_upper();
+        // if(variables[i]->q() < variables[i]->q_lower()) variables[i]->q() = variables[i]->q_lower();
       }else if(variables[i]->isFreeJoint()) {
         // update rootlink pos rot
         variables[i]->p() += result.segment<3>(idx);

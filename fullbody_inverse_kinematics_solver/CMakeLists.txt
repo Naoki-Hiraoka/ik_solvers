@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(fullbody_inverse_kinematics_solver)
 
-add_compile_options(-std=c++11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 ## Find catkin macros and libraries
